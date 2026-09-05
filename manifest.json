@@ -1,9 +1,9 @@
 {
 	"id": "grimoire",
 	"name": "Grimoire",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"minAppVersion": "1.5.0",
-	"description": "Inline metadata expressions with optional card, tag, button, list, and code styles.",
+	"description": "Inline metadata expressions with optional card, tag, badge, progress, image, wiki, button, list, and code styles.",
 	"author": "FootPrintStudio",
 	"authorUrl": "https://github.com/FootPrintStudio",
 	"isDesktopOnly": false

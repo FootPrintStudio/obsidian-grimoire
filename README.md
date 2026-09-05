@@ -47,6 +47,12 @@ Apply **`AS <style>`** after any subexpression (root, call argument, or parenthe
 |--------|--------|
 | `AS card` / `AS cards` | Text pill chips. Arrays become one chip per item. HTML inside a card is rendered. |
 | `AS tag` / `AS tags` | Tag chips with a leading `#`. Click opens a tag search (Ctrl/Cmd-click → new tab). |
+| `AS badge` / `AS pill` | Compact status chip (tone inferred from text) |
+| `AS callout` | Callout box (`note:` / `tip:` / `warning:` / `error:` prefixes) |
+| `AS progress` | Progress bar from `0–1`, percent, or `n/m` |
+| `AS meter` / `AS stars` | Discrete 1–5 star rating |
+| `AS image` / `AS img` | Vault path / markdown / wiki image embed |
+| `AS wiki` / `AS wikilink` | Wikilink styling without button chrome |
 | `AS button` / `AS buttons` | Link buttons (`[[Note]]`, markdown links, or URLs) |
 | `AS cards-code` / `AS code` | Monospace chips with a leading `.` |
 | `AS inline` | Comma-separated text |
@@ -87,6 +93,17 @@ Syntax highlighting is controlled by **Syntax highlight inline queries** (on by 
 
 The settings UI includes **README** and **Guide** tabs with in-app documentation.
 
+## v0.7.0 features
+
+- New **`AS`** styles: badge/pill, callout, progress, meter/stars, image, wiki
+- Functions: `exists`, `age`, `numberformat`
+- Ordinal token **`O`** in `dateformat` / `durationformat` (e.g. `ddO` → `3rd`)
+
+## v0.6.0 features
+
+- Subexpression **`AS <style>`** (target branches / paren groups; mix with markdown via concat)
+- **`AS tag`** / **`AS tags`** (distinct from card chips)
+
 ## v0.4.0 features
 
 - Plugin **id** `grimoire` (folder `grimoire`, repo `FootPrintStudio/obsidian-grimoire`)
@@ -94,8 +111,7 @@ The settings UI includes **README** and **Guide** tabs with in-app documentation
 ## v0.3.0 features
 
 - Plugin display name **Grimoire**
-- Subexpression **`AS <style>`** display styles: card, tag, button, cards-code, inline, list (target branches / paren groups; mix with markdown via concat)
-
+- Display styles: card, button, cards-code, inline, list
 - Button link-open setting (from Property Pretty)
 
 ## v0.2.0 features

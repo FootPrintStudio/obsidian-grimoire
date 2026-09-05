@@ -244,3 +244,135 @@
 .grim-list li {
 	margin: 0.1em 0;
 }
+
+.grim-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	margin: 1px 2px;
+	border-radius: 999px;
+	font-size: var(--font-size-smaller, 0.85em);
+	font-weight: 600;
+	line-height: 1.4;
+	vertical-align: baseline;
+}
+
+.grim-badge-muted {
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+}
+
+.grim-badge-success {
+	background-color: rgba(var(--color-green-rgb, 68, 207, 110), 0.18);
+	color: var(--color-green);
+}
+
+.grim-badge-warn {
+	background-color: rgba(var(--color-orange-rgb, 233, 151, 63), 0.18);
+	color: var(--color-orange);
+}
+
+.grim-badge-danger {
+	background-color: rgba(var(--color-red-rgb, 251, 70, 76), 0.18);
+	color: var(--color-red);
+}
+
+.grim-callout {
+	display: block;
+	margin: 0.35em 0;
+	padding: 0.55em 0.75em;
+	border-radius: var(--radius-s, 5px);
+	border-left: 4px solid var(--text-accent);
+	background: var(--background-secondary);
+	font-size: var(--font-size-small);
+}
+
+.grim-callout-title {
+	font-weight: 700;
+	text-transform: uppercase;
+	font-size: 0.75em;
+	letter-spacing: 0.04em;
+	margin-bottom: 0.25em;
+	color: var(--text-muted);
+}
+
+.grim-callout-note {
+	border-left-color: var(--color-blue, var(--text-accent));
+}
+
+.grim-callout-tip {
+	border-left-color: var(--color-cyan, var(--text-accent));
+}
+
+.grim-callout-warning {
+	border-left-color: var(--color-orange);
+}
+
+.grim-callout-error {
+	border-left-color: var(--color-red);
+}
+
+.grim-progress {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	vertical-align: middle;
+	min-width: 6em;
+}
+
+.grim-progress-track {
+	display: inline-block;
+	width: 5.5em;
+	height: 0.55em;
+	border-radius: 999px;
+	background: var(--background-modifier-border);
+	overflow: hidden;
+	vertical-align: middle;
+}
+
+.grim-progress-fill {
+	display: block;
+	height: 100%;
+	background: var(--interactive-accent);
+	border-radius: 999px;
+}
+
+.grim-progress-label {
+	font-size: var(--font-size-smaller, 0.85em);
+	color: var(--text-muted);
+}
+
+.grim-meter {
+	display: inline-flex;
+	gap: 0.05em;
+	vertical-align: baseline;
+	letter-spacing: 0.02em;
+}
+
+.grim-meter-star {
+	color: var(--text-faint);
+	font-size: 0.95em;
+}
+
+.grim-meter-star.is-filled {
+	color: var(--color-orange, var(--text-accent));
+}
+
+.grim-image {
+	display: inline-block;
+	max-width: 100%;
+	max-height: 12em;
+	border-radius: var(--radius-s, 5px);
+	vertical-align: middle;
+	object-fit: cover;
+}
+
+.grim-wiki {
+	color: var(--link-color);
+	text-decoration: underline;
+	text-decoration-color: var(--link-decoration-color, var(--link-color));
+	cursor: pointer;
+}
+
+.grim-wiki-external {
+	color: var(--link-external-color, var(--link-color));
+}

@@ -183,6 +183,14 @@ Example — `bodyParts: [Hand, Feet, Knees, Toes]`:
 | `any(bodyParts, "Feet", "Elbows")` | `true` |
 | `any(bodyParts, "Nose", "Elbows", "Legs")` | `false` |
 
+### `exists(value)`
+
+Explicit non-empty predicate — same truthiness as one-arg `any(value)`, but clearer for optional fields.
+
+```markdown
+`q= choice(exists(description), description, "No description")`
+```
+
 ### `slice(list, start, end?)`
 
 Returns a sub-list. `end` is optional (defaults to list length).
@@ -209,12 +217,38 @@ Formats a date using **Luxon-style tokens** (aliased to Obsidian moment):
 | `yyyy` | 4-digit year |
 | `MM` | 2-digit month |
 | `dd` | 2-digit day |
+| `O` | English ordinal suffix for the preceding day token (`ddO` → `3rd`) |
 | `HH` | Hour (24h) |
 | `mm` | Minute |
 | `ss` | Second |
 
 ```markdown
 `q= dateformat(file.mtime, "yyyy-MM-dd HH:mm:ss")`
+`q= dateformat(date("2003-10-03"), "MMMM ddO, yyyy")`
+```
+
+### `age(date)` / `age(date, format)`
+
+Elapsed time from `date` until now (`date(now)`), using the same duration/date token pipeline as `durationformat`.
+
+- **No format:** whole years (number).
+- **With format:** duration tokens control the span / display (`"MM"` months, `"dd"` days, `"y' years'"` human text, etc.).
+
+```markdown
+`q= age(birthDate)`
+`q= age(birthDate, "MM")`
+`q= age(birthDate, "dd")`
+`q= age(birthDate, "y' years'")`
+```
+
+### `numberformat(n, pattern)`
+
+Formats numbers for stats lines. Patterns use `0` / `0.00` decimals, optional `,` grouping, and `%` for percent (value × 100).
+
+```markdown
+`q= numberformat(12.345, "0.0")`
+`q= numberformat(0.256, "0.0%")`
+`q= numberformat(1234.5, "0,0.0")`
 ```
 
 ### `dur(amount, unit)` / `dur("text")`
@@ -241,11 +275,13 @@ Formats a **duration** value (from `date - date`, `dur(...)`, etc.).
 |-------|---------|----------------|
 | `y`, `yy`, `yyyy` | Years | `24`, `04`, `2024` |
 | `M`, `MM` | Months (within duration) | `6`, `06` |
+| `MMMM`, `MMM` | Month name from months component | `March`, `Mar` |
 | `d`, `dd` | Days (within duration) | `15`, `15` |
 | `h`, `hh`, `HH` | Hours (within duration) | `1`, `01` |
 | `m`, `mm` | Minutes | `30`, `30` |
 | `s`, `ss` | Seconds | `5`, `05` |
 | `S`, `SS`, `SSS` | Milliseconds | |
+| `…O` | Ordinal suffix on a numeric unit (`dO` → `3rd`, `MO` → `1st`) | |
 
 Literal text in single quotes is preserved (e.g. `y' years'` → `24 years`).
 
@@ -254,6 +290,7 @@ Literal text in single quotes is preserved (e.g. `y' years'` → `24 years`).
 `q= durationformat(file.mtime - date(birthDate), "y' years'")`
 `q= durationformat(dur(90, "minutes"), "h:mm")`
 `q= durationformat(dur(5, "days") - dur(2, "days"), "d' days'")`
+`q= durationformat(dur(3, "days"), "dO")`
 ```
 
 Note: `dateformat` formats **dates**; `durationformat` formats **durations**. Do not use date tokens like `yyyy-MM-dd` on durations — use `y`, `M`, `d`, `h`, `m`, `s` instead.
@@ -315,7 +352,12 @@ Apply **`AS <style>`** after any subexpression to wrap that value in a Pretty-st
 `q= default(location AS card, "*Unknown*")`
 `q= choice(any(location), "**Location:** " + (location AS card) + " <br>", "")`
 `q= file.tags AS tag`
+`q= characterStatus AS badge`
 `q= parent AS button`
+`q= parent AS wiki`
+`q= pageImage AS image`
+`q= questProgress AS progress`
+`q= rating AS stars`
 `q= cssclasses AS cards-code`
 `q= tags AS inline`
 `q= bodyParts AS list`
@@ -325,6 +367,12 @@ Apply **`AS <style>`** after any subexpression to wrap that value in a Pretty-st
 |-------|---------|--------|
 | `card` | `cards` | Text pill chips. One chip per list item; a single string is one chip. HTML inside a chip is rendered when tags are present. |
 | `tag` | `tags` | Tag chips with a leading `#`. Click opens a vault tag search; Ctrl/Cmd-click opens in a new tab. |
+| `badge` | `pill` | Compact status chip; tone is inferred from text (alive/ok → success, warn/undead → warn, dead/error → danger). |
+| `callout` | | Obsidian-like callout box. Optional prefix `note:` / `tip:` / `warning:` / `error:` sets the type. |
+| `progress` | | Bar from `0–1`, percent (`75`), or fraction (`3/4`). |
+| `meter` | `stars` | Discrete 1–5 star rating from a number, `0–1`, percent, or `n/m`. |
+| `image` | `img` | Vault path, `![](…)`, or wiki embed rendered as media. |
+| `wiki` | `wikilink` | Wikilink (or URL) styling without button chrome. |
 | `button` | `buttons` | Link buttons for `[[Note]]`, `[label](url)`, or `https://…` |
 | `cards-code` | `code`, `code-card`, `codecard` | Monospace chips with a leading `.` |
 | `inline` | | Comma-separated text |

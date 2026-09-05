@@ -45,7 +45,7 @@ describe("parseQuery AS style", () => {
 		}
 	});
 
-	it("accepts cards, tags, button, hyphenated cards-code, inline, and list", () => {
+	it("accepts cards, tags, badge, and other styles", () => {
 		const expectStyled = (source: string, style: string) => {
 			const ast = parseQuery(source);
 			expect(ast.kind).toBe("styled");
@@ -54,6 +54,16 @@ describe("parseQuery AS style", () => {
 		expectStyled("tags AS cards", "cards");
 		expectStyled("file.tags AS tag", "tags");
 		expectStyled("file.tags AS tags", "tags");
+		expectStyled("status AS badge", "badge");
+		expectStyled("status AS pill", "badge");
+		expectStyled("note AS callout", "callout");
+		expectStyled("ratio AS progress", "progress");
+		expectStyled("rating AS meter", "meter");
+		expectStyled("rating AS stars", "meter");
+		expectStyled("pageImage AS image", "image");
+		expectStyled("pageImage AS img", "image");
+		expectStyled("parent AS wiki", "wiki");
+		expectStyled("parent AS wikilink", "wiki");
 		expectStyled("parent AS button", "button");
 		expectStyled("cssclasses AS cards-code", "cards-code");
 		expectStyled("tags AS code", "cards-code");

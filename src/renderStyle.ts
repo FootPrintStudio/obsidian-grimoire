@@ -1,4 +1,16 @@
-export type RenderStyle = "cards" | "tags" | "button" | "cards-code" | "inline" | "list";
+export type RenderStyle =
+	| "cards"
+	| "tags"
+	| "button"
+	| "cards-code"
+	| "inline"
+	| "list"
+	| "badge"
+	| "callout"
+	| "progress"
+	| "meter"
+	| "image"
+	| "wiki";
 
 export type LinkOpenBehavior = "default" | "current" | "tab" | "split" | "window";
 
@@ -15,6 +27,16 @@ const STYLE_ALIASES: Record<string, RenderStyle> = {
 	codecard: "cards-code",
 	inline: "inline",
 	list: "list",
+	badge: "badge",
+	pill: "badge",
+	callout: "callout",
+	progress: "progress",
+	meter: "meter",
+	stars: "meter",
+	image: "image",
+	img: "image",
+	wiki: "wiki",
+	wikilink: "wiki",
 };
 
 export const RENDER_STYLE_NAMES = [
@@ -24,6 +46,12 @@ export const RENDER_STYLE_NAMES = [
 	"cards-code",
 	"inline",
 	"list",
+	"badge",
+	"callout",
+	"progress",
+	"meter",
+	"image",
+	"wiki",
 ] as const;
 
 export function parseRenderStyleName(raw: string): RenderStyle {
@@ -31,7 +59,7 @@ export function parseRenderStyleName(raw: string): RenderStyle {
 	const resolved = STYLE_ALIASES[key];
 	if (!resolved) {
 		throw new Error(
-			`Unknown style "${raw}". Use AS card, tag, button, cards-code, inline, or list.`,
+			`Unknown style "${raw}". Use AS card, tag, button, cards-code, inline, list, badge, callout, progress, meter, image, or wiki.`,
 		);
 	}
 	return resolved;

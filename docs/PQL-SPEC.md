@@ -86,17 +86,20 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | `choice(cond, a, b)` | Boolean branch |
 | `select(key, {k,v}, …)` | Key lookup; `{*, fallback}` wildcard |
 | `any(v, …candidates)` | One arg: non-empty; multi-arg: any candidate contained in property |
+| `exists(v)` | Explicit non-empty predicate (same truthiness as one-arg `any`) |
 | `slice(list, start, end?)` | List slice |
 | `contains(hay, needle)` | Substring / partial list match |
 | `econtains(hay, needle)` | Exact element match |
-| `dateformat(date, fmt)` | Format date (Luxon tokens aliased to moment) |
+| `dateformat(date, fmt)` | Format date (Luxon tokens aliased to moment; `O` = ordinal after day token) |
 
 ### Tier 2
 
 | Function | Description |
 |----------|-------------|
 | `dur(n, unit)` / `dur(string)` | Duration value |
-| `durationformat(dur, fmt?)` | Format duration; without `fmt`, human-readable. With `fmt`, Luxon/Dataview duration tokens (`y`, `M`, `d`, `h`, `m`, `s`, …). Literal text in single quotes. Not the same token set as `dateformat`. |
+| `durationformat(dur, fmt?)` | Format duration; without `fmt`, human-readable. With `fmt`, Luxon/Dataview duration tokens (`y`, `M`, `d`, `h`, `m`, `s`, …) plus `O` ordinals. Literal text in single quotes. Not the same token set as `dateformat`. |
+| `age(date)` / `age(date, fmt)` | Years since `date` (default), or duration-token format of elapsed span |
+| `numberformat(n, pattern)` | Number formatting (`0`, `0.00`, `,`, `%`) |
 | `date(string \| now \| today)` | Parse ISO date string, or current time / start of today |
 | `length(v)` | String/list length |
 | `coalesce(a, b, …)` | First truthy value |
@@ -118,7 +121,7 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 ```
 expression := orExpr [ "AS" style ]
 query := expression
-style := "card" | "cards" | "tag" | "tags" | "button" | "buttons" | "cards-code" | "code" | "inline" | "list" | …
+style := "card" | "cards" | "tag" | "tags" | "badge" | "pill" | "callout" | "progress" | "meter" | "stars" | "image" | "img" | "wiki" | "wikilink" | "button" | "buttons" | "cards-code" | "code" | "inline" | "list" | …
 ```
 
 `AS` is an expression postfix (available on call arguments and inside parentheses), not a binary operator. `as` as a field name is still an identifier (`as AS card`). Root `expr AS card` styles the whole result; `default(location AS card, "*Unknown*")` styles only the location branch. Concat mixes require parens: `"**Location:** " + (location AS card)`.
@@ -133,7 +136,7 @@ Hyphenated styles (`cards-code`) are a single style token.
 | HTML tags only (no markdown markers) | `innerHTML` |
 | Plain text / numbers | text node |
 | `null` | empty |
-| Styled value (`AS …`) | Text pills, tag chips, buttons, or list |
+| Styled value (`AS …`) | Text pills, tags, badges, callouts, progress, meter, image, wiki, buttons, or list |
 | Fragments (plain + styled concat) | Inline mix of markdown/HTML/text and styled chips |
 | Error | red inline `pq-error` |
 
@@ -145,9 +148,11 @@ PQL accepts **Luxon-style aliases** (Dataview habit) and maps them to Obsidian m
 |-------------|--------|
 | `yyyy` | `YYYY` |
 | `dd` | `DD` |
+| `ddO` / `dO` | `Do` (ordinal day) |
 | `HH`, `mm`, `ss` | unchanged |
 
 Example: `` `q= dateformat(file.mtime, "yyyy-MM-dd HH:mm:ss")` ``
+Example: `` `q= dateformat(date("2003-10-03"), "MMMM ddO, yyyy")` `` → `October 3rd, 2003`
 
 ## Non-goals
 

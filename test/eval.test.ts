@@ -50,6 +50,14 @@ describe("eval core functions", () => {
 		);
 	});
 
+	it("exists is true for non-empty values", () => {
+		expect(evaluateExpression("exists(tags)", ctx)).toBe(true);
+		expect(evaluateExpression("exists(emptyField)", createTestContext({ fields: { emptyField: "" } }))).toBe(
+			false,
+		);
+		expect(evaluateExpression("exists(missing)", createTestContext({ fields: {} }))).toBe(false);
+	});
+
 	it("any multi-arg checks containment in property", () => {
 		const bodyCtx = createTestContext({
 			fields: { bodyParts: ["Hand", "Feet", "Knees", "Toes"] },

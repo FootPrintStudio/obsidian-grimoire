@@ -60,13 +60,33 @@ export function toPqDuration(value: Value): PqDuration | null {
 	return null;
 }
 
-/** Map Luxon-style tokens to moment format tokens. */
+/** English ordinal suffix for a whole number (1 → st, 2 → nd, …). */
+export function ordinalSuffix(n: number): string {
+	const v = Math.abs(Math.trunc(n)) % 100;
+	if (v >= 11 && v <= 13) return "th";
+	switch (v % 10) {
+		case 1:
+			return "st";
+		case 2:
+			return "nd";
+		case 3:
+			return "rd";
+		default:
+			return "th";
+	}
+}
+
+/**
+ * Map Luxon-style tokens to moment format tokens.
+ * Day + `O` (e.g. `ddO`, `dO`) becomes moment `Do` (ordinal day).
+ */
 export function normalizeFormatTokens(format: string): string {
 	return format
+		.replace(/(dd|DD|d|D)O/g, "Do")
 		.replace(/yyyy/g, "YYYY")
 		.replace(/yy(?![y])/g, "YY")
 		.replace(/dd/g, "DD")
-		.replace(/d(?![d])/g, "D")
+		.replace(/d(?![dDo])/g, "D")
 		.replace(/HH/g, "HH")
 		.replace(/mm/g, "mm")
 		.replace(/ss/g, "ss");
@@ -109,36 +129,75 @@ function padDuration(n: number, width: number): string {
 export function formatDurationWithTokens(ms: number, format: string): string {
 	const p = durationComponents(ms);
 	const tokenRe =
-		/yyyy|yy|SSS|SS|MM|mm|dd|HH|hh|ss|y|M|d|h|m|s|S/g;
+		/yyyyO|yyO|yO|MMMM|MMM|SSS|SS|MMO|MO|mmO|mO|ddO|dO|HHO|hhO|hO|ssO|sO|yyyy|yy|MM|mm|dd|HH|hh|ss|y|M|d|h|m|s|S/g;
+
+	const withOrdinal = (n: number, padded: string, ordinal: boolean): string =>
+		ordinal ? `${padded}${ordinalSuffix(n)}` : padded;
+
+	const monthName = (width: "MMMM" | "MMM"): string => {
+		const idx = ((p.months % 12) + 12) % 12;
+		return width === "MMMM" ? moment.months(idx) : moment.monthsShort(idx);
+	};
 
 	const replaceTokens = (segment: string): string =>
 		segment.replace(tokenRe, (token) => {
 			switch (token) {
+				case "yyyyO":
+					return withOrdinal(p.years, padDuration(p.years, 4), true);
 				case "yyyy":
 					return padDuration(p.years, 4);
+				case "yyO":
+					return withOrdinal(p.years % 100, padDuration(p.years % 100, 2), true);
 				case "yy":
 					return padDuration(p.years % 100, 2);
+				case "yO":
+					return withOrdinal(p.years, String(p.years), true);
 				case "y":
 					return String(p.years);
+				case "MMMM":
+					return monthName("MMMM");
+				case "MMM":
+					return monthName("MMM");
+				case "MMO":
+					return withOrdinal(p.months, padDuration(p.months, 2), true);
 				case "MM":
 					return padDuration(p.months, 2);
+				case "MO":
+					return withOrdinal(p.months, String(p.months), true);
 				case "M":
 					return String(p.months);
+				case "ddO":
+					return withOrdinal(p.days, padDuration(p.days, 2), true);
 				case "dd":
 					return padDuration(p.days, 2);
+				case "dO":
+					return withOrdinal(p.days, String(p.days), true);
 				case "d":
 					return String(p.days);
+				case "HHO":
+				case "hhO":
+					return withOrdinal(p.hours, padDuration(p.hours, 2), true);
 				case "HH":
 				case "hh":
 					return padDuration(p.hours, 2);
+				case "hO":
+					return withOrdinal(p.hours, String(p.hours), true);
 				case "h":
 					return String(p.hours);
+				case "mmO":
+					return withOrdinal(p.minutes, padDuration(p.minutes, 2), true);
 				case "mm":
 					return padDuration(p.minutes, 2);
+				case "mO":
+					return withOrdinal(p.minutes, String(p.minutes), true);
 				case "m":
 					return String(p.minutes);
+				case "ssO":
+					return withOrdinal(p.seconds, padDuration(p.seconds, 2), true);
 				case "ss":
 					return padDuration(p.seconds, 2);
+				case "sO":
+					return withOrdinal(p.seconds, String(p.seconds), true);
 				case "s":
 					return String(p.seconds);
 				case "SSS":
@@ -279,4 +338,39 @@ export function coerceYamlDate(value: unknown): Value {
 	}
 	if (value instanceof Date) return pqDate(value.getTime());
 	return null;
+}
+
+/**
+ * Age from `date` until now.
+ * - No format → whole years (number).
+ * - With format → duration/date token pipeline via `formatDurationWithTokens`
+ *   (e.g. `"MM"` months, `"dd"` days, `"MMMM dd, yyyy"` calendar-style components).
+ */
+export function fnAge(value: Value, format?: string): Value {
+	const birth = toMoment(value);
+	if (!birth) return null;
+	const now = moment();
+	if (!format) return now.diff(birth, "years");
+	const ms = Math.max(0, now.diff(birth));
+	return formatDurationWithTokens(ms, format);
+}
+
+/** Format a number with a simple 0/0.00/% pattern (moment-adjacent stats formatting). */
+export function numberformat(value: Value, pattern: string): string {
+	const n = typeof value === "number" ? value : Number(value);
+	if (!Number.isFinite(n)) return "";
+	const raw = pattern.trim() || "0";
+	const percent = raw.includes("%");
+	const amount = percent ? n * 100 : n;
+	const core = raw.replace(/%/g, "");
+	const decimalMatch = core.match(/\.0+/);
+	const decimals = decimalMatch ? decimalMatch[0].length - 1 : 0;
+	const fixed = amount.toFixed(decimals);
+	const withGroup = /0,0|,0/.test(core)
+		? Number(fixed).toLocaleString("en-US", {
+				minimumFractionDigits: decimals,
+				maximumFractionDigits: decimals,
+			})
+		: fixed;
+	return percent ? `${withGroup}%` : withGroup;
 }

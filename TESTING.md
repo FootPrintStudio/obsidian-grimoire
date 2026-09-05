@@ -30,6 +30,16 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= default(location AS card, "*Unknown*")` `` cards only when location is set; fallback stays italic markdown
 - [ ] `` `q= "**Location:** " + (location AS card) + " <br>"` `` mixes bold label, card chip, and break
 - [ ] `` `q= parent AS button` `` renders a link button
+- [ ] `` `q= characterStatus AS badge` `` renders a compact status chip
+- [ ] `` `q= "tip: Lore blurb" AS callout` `` renders a tip callout
+- [ ] `` `q= "3/4" AS progress` `` renders a progress bar
+- [ ] `` `q= 4 AS stars` `` renders four filled stars
+- [ ] `` `q= pageImage AS image` `` renders an image when the path resolves
+- [ ] `` `q= parent AS wiki` `` renders a wikilink (not a button)
+- [ ] `` `q= exists(description)` `` is true/false for optional fields
+- [ ] `` `q= age(birthDate)` `` shows whole years
+- [ ] `` `q= dateformat(date("2003-10-03"), "MMMM ddO, yyyy")` `` → **October 3rd, 2003**
+- [ ] `` `q= numberformat(0.256, "0.0%")` `` → **25.6%**
 
 ## Syntax highlighting checklist
 
