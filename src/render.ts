@@ -1,7 +1,13 @@
 import { App, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, TFile } from "obsidian";
 import { buildQueryContext } from "./context";
 import { shieldDataviewInlineCodeFalsePositive } from "./dataviewCoexist";
-import { classifyOutput, valueToPlainString, valueToStyleItems } from "./coerce";
+import {
+	classifyOutput,
+	isPqFragments,
+	isPqStyled,
+	valueToPlainString,
+	valueToStyleItems,
+} from "./coerce";
 import { durationformat } from "./dates";
 import { evaluateExpressionSafe } from "./eval";
 import { highlightExpressionHtml, splitPrefixExpression } from "./highlight";
@@ -85,6 +91,75 @@ export function renderValue(
 	}
 }
 
+function renderFragmentPart(
+	app: App,
+	host: HTMLElement,
+	value: Value,
+	sourcePath: string,
+	ctx: MarkdownPostProcessorContext,
+	linkOpenBehavior: PropertyQuerySettings["linkOpenBehavior"],
+): void {
+	if (isPqStyled(value)) {
+		const wrap = host.createSpan({ cls: "grim-fragment grim-fragment-styled" });
+		renderStyledValue(
+			wrap,
+			value.style,
+			valueToStyleItems(value.value),
+			app,
+			sourcePath,
+			linkOpenBehavior,
+		);
+		return;
+	}
+
+	const text = valueToPlainString(value);
+	if (!text) return;
+
+	const wrap = host.createSpan({ cls: "grim-fragment grim-fragment-plain" });
+	const kind = classifyOutput(typeof value === "string" ? value : text);
+	if (kind === "html") {
+		wrap.innerHTML = text;
+	} else if (kind === "markdown") {
+		const child = new QueryResultRenderer(wrap, app, text, sourcePath);
+		ctx.addChild(child);
+	} else {
+		wrap.setText(text);
+	}
+}
+
+function renderQueryResult(
+	app: App,
+	host: HTMLElement,
+	value: Value,
+	sourcePath: string,
+	ctx: MarkdownPostProcessorContext,
+	settings: PropertyQuerySettings,
+): void {
+	if (isPqStyled(value)) {
+		renderStyledValue(
+			host,
+			value.style,
+			valueToStyleItems(value.value),
+			app,
+			sourcePath,
+			settings.linkOpenBehavior,
+		);
+		return;
+	}
+
+	if (isPqFragments(value)) {
+		host.empty();
+		host.addClass("pq-result");
+		host.addClass("grim-fragments");
+		for (const part of value.parts) {
+			renderFragmentPart(app, host, part, sourcePath, ctx, settings.linkOpenBehavior);
+		}
+		return;
+	}
+
+	renderValue(app, host, value, sourcePath, ctx);
+}
+
 function extractExpression(codeText: string, prefix: string): string | null {
 	const trimmed = codeText.trim();
 	if (!trimmed.startsWith(prefix)) return null;
@@ -121,18 +196,7 @@ function processInlineCodeElement(
 		renderError(host, settings.debugMode ? result.error : "Grimoire error");
 		return;
 	}
-	if (result.style) {
-		renderStyledValue(
-			host,
-			result.style,
-			valueToStyleItems(result.value),
-			app,
-			sourcePath,
-			settings.linkOpenBehavior,
-		);
-		return;
-	}
-	renderValue(app, host, result.value, sourcePath, ctx);
+	renderQueryResult(app, host, result.value, sourcePath, ctx, settings);
 }
 
 function highlightInlineCodeElement(codeEl: HTMLElement, prefix: string): void {

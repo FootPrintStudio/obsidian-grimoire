@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moment } from "obsidian";
+import { isPqFragments, isPqStyled } from "../src/coerce";
 import { pqDate } from "../src/dates";
 import { createTestContext, evaluateExpression, evaluateExpressionSafe } from "../src/eval";
 import { parseExpression } from "../src/parse";
@@ -168,7 +169,7 @@ describe("date and duration", () => {
 });
 
 describe("evaluateExpressionSafe styles", () => {
-	it("returns style from a trailing AS clause", () => {
+	it("returns a styled value from a trailing AS clause", () => {
 		const ctx = createTestContext({ fields: { characterStatus: "" } });
 		const result = evaluateExpressionSafe(
 			'default(characterStatus, "<font color=\\"#595959\\">Alive, Dead, Undead.</font>") AS card',
@@ -176,14 +177,84 @@ describe("evaluateExpressionSafe styles", () => {
 		);
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.style).toBe("cards");
-			expect(String(result.value)).toContain("Alive");
+			expect(isPqStyled(result.value)).toBe(true);
+			if (isPqStyled(result.value)) {
+				expect(result.value.style).toBe("cards");
+				expect(String(result.value.value)).toContain("Alive");
+			}
 		}
 	});
 
-	it("returns null style without AS", () => {
+	it("returns tags style from AS tag", () => {
+		const ctx = createTestContext({ fields: { tags: ["alpha", "beta"] } });
+		const result = evaluateExpressionSafe("tags AS tag", ctx);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(isPqStyled(result.value)).toBe(true);
+			if (isPqStyled(result.value)) expect(result.value.style).toBe("tags");
+		}
+	});
+
+	it("returns plain value without AS", () => {
 		const result = evaluateExpressionSafe("title", createTestContext({ fields: { title: "Hello" } }));
 		expect(result.ok).toBe(true);
-		if (result.ok) expect(result.style).toBeNull();
+		if (result.ok) {
+			expect(isPqStyled(result.value)).toBe(false);
+			expect(result.value).toBe("Hello");
+		}
+	});
+
+	it("styles only the location branch inside default", () => {
+		const withLoc = evaluateExpressionSafe(
+			'default(location AS card, "*Unknown*")',
+			createTestContext({ fields: { location: "Hall" } }),
+		);
+		expect(withLoc.ok).toBe(true);
+		if (withLoc.ok) {
+			expect(isPqStyled(withLoc.value)).toBe(true);
+			if (isPqStyled(withLoc.value)) {
+				expect(withLoc.value.style).toBe("cards");
+				expect(withLoc.value.value).toBe("Hall");
+			}
+		}
+
+		const missing = evaluateExpressionSafe(
+			'default(location AS card, "*Unknown*")',
+			createTestContext({ fields: { location: "" } }),
+		);
+		expect(missing.ok).toBe(true);
+		if (missing.ok) {
+			expect(isPqStyled(missing.value)).toBe(false);
+			expect(missing.value).toBe("*Unknown*");
+		}
+	});
+
+	it("builds fragments when concatenating a styled subexpression", () => {
+		const result = evaluateExpressionSafe(
+			'"**Location:** " + (location AS card) + " <br>"',
+			createTestContext({ fields: { location: "Hall" } }),
+		);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(isPqFragments(result.value)).toBe(true);
+			if (isPqFragments(result.value)) {
+				expect(result.value.parts).toHaveLength(3);
+				expect(result.value.parts[0]).toBe("**Location:** ");
+				expect(isPqStyled(result.value.parts[1]!)).toBe(true);
+				expect(result.value.parts[2]).toBe(" <br>");
+			}
+		}
+	});
+
+	it("preserves styled values through choice", () => {
+		const result = evaluateExpressionSafe(
+			'choice(true, location AS card, "")',
+			createTestContext({ fields: { location: "Hall" } }),
+		);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(isPqStyled(result.value)).toBe(true);
+			if (isPqStyled(result.value)) expect(result.value.value).toBe("Hall");
+		}
 	});
 });

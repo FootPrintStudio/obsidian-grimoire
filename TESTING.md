@@ -24,8 +24,11 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] Duration row shows human-readable age span
 - [ ] Error row shows red inline message (*Grimoire error* unless Debug mode is on)
 - [ ] Dataview `` `= this.refreshMarker` `` still works when Dataview enabled
-- [ ] `` `q= … AS card` `` renders pill chips (HTML inside a card is allowed)
-- [ ] `` `q= file.tags AS card` `` renders clickable tag chips
+- [ ] `` `q= … AS card` `` renders text pill chips (HTML inside a card is allowed)
+- [ ] `` `q= file.tags AS tag` `` renders clickable tag chips
+- [ ] `` `q= file.tags AS card` `` renders text pills (no auto tag styling)
+- [ ] `` `q= default(location AS card, "*Unknown*")` `` cards only when location is set; fallback stays italic markdown
+- [ ] `` `q= "**Location:** " + (location AS card) + " <br>"` `` mixes bold label, card chip, and break
 - [ ] `` `q= parent AS button` `` renders a link button
 
 ## Syntax highlighting checklist

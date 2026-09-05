@@ -10,8 +10,6 @@ import {
 } from "./parseLink";
 import type { LinkOpenBehavior, RenderStyle } from "./renderStyle";
 
-const TAG_LIKE = /^#?[A-Za-z0-9_/-]+$/;
-
 function setRichText(el: HTMLElement, text: string): void {
 	if (containsHtmlTag(text)) {
 		el.innerHTML = text;
@@ -32,29 +30,29 @@ async function openTagSearch(app: App, tag: string, newPane: boolean): Promise<v
 	if (view?.setQuery) view.setQuery(query);
 }
 
-function looksLikeTags(values: string[]): boolean {
-	return values.length > 0 && values.every((v) => TAG_LIKE.test(v.trim()));
+function renderCards(el: HTMLElement, values: string[]): void {
+	const container = el.createSpan({ cls: "grim-card-container" });
+	for (const value of values) {
+		const card = container.createSpan({ cls: "grim-card grim-text-card" });
+		const textEl = card.createEl("span", { cls: "grim-card-text" });
+		setRichText(textEl, value);
+	}
 }
 
-function renderCards(el: HTMLElement, values: string[], app: App): void {
+function renderTags(el: HTMLElement, values: string[], app: App): void {
 	const container = el.createSpan({ cls: "grim-card-container" });
-	const asTags = looksLikeTags(values);
-
 	for (const value of values) {
+		const tagName = value.replace(/^#/, "").trim();
+		if (!tagName) continue;
 		const card = container.createSpan({
-			cls: `grim-card ${asTags ? "grim-tag-card grim-clickable" : "grim-text-card"}`,
+			cls: "grim-card grim-tag-card grim-clickable",
 		});
-		if (asTags) {
-			card.createEl("span", { cls: "grim-tag-hash", text: "#" });
-			card.createEl("span", { cls: "grim-card-text", text: value.replace(/^#/, "") });
-			card.setAttr("title", `Search for #${value.replace(/^#/, "")}`);
-			card.addEventListener("click", (e) => {
-				void openTagSearch(app, value, e.ctrlKey || e.metaKey);
-			});
-		} else {
-			const textEl = card.createEl("span", { cls: "grim-card-text" });
-			setRichText(textEl, value);
-		}
+		card.createEl("span", { cls: "grim-tag-hash", text: "#" });
+		card.createEl("span", { cls: "grim-card-text", text: tagName });
+		card.setAttr("title", `Search for #${tagName}`);
+		card.addEventListener("click", (e) => {
+			void openTagSearch(app, tagName, e.ctrlKey || e.metaKey);
+		});
 	}
 }
 
@@ -145,7 +143,10 @@ export function renderStyledValue(
 			renderButton(el, values, app, sourcePath, linkOpenBehavior);
 			break;
 		case "cards":
-			renderCards(el, values, app);
+			renderCards(el, values);
+			break;
+		case "tags":
+			renderTags(el, values, app);
 			break;
 		case "cards-code":
 			renderCardsCode(el, values);

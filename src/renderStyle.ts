@@ -1,10 +1,12 @@
-export type RenderStyle = "cards" | "button" | "cards-code" | "inline" | "list";
+export type RenderStyle = "cards" | "tags" | "button" | "cards-code" | "inline" | "list";
 
 export type LinkOpenBehavior = "default" | "current" | "tab" | "split" | "window";
 
 const STYLE_ALIASES: Record<string, RenderStyle> = {
 	card: "cards",
 	cards: "cards",
+	tag: "tags",
+	tags: "tags",
 	button: "button",
 	buttons: "button",
 	"cards-code": "cards-code",
@@ -15,14 +17,21 @@ const STYLE_ALIASES: Record<string, RenderStyle> = {
 	list: "list",
 };
 
-export const RENDER_STYLE_NAMES = ["card", "button", "cards-code", "inline", "list"] as const;
+export const RENDER_STYLE_NAMES = [
+	"card",
+	"tag",
+	"button",
+	"cards-code",
+	"inline",
+	"list",
+] as const;
 
 export function parseRenderStyleName(raw: string): RenderStyle {
 	const key = raw.trim().toLowerCase();
 	const resolved = STYLE_ALIASES[key];
 	if (!resolved) {
 		throw new Error(
-			`Unknown style "${raw}". Use AS card, button, cards-code, inline, or list.`,
+			`Unknown style "${raw}". Use AS card, tag, button, cards-code, inline, or list.`,
 		);
 	}
 	return resolved;

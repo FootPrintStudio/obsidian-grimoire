@@ -1,6 +1,6 @@
 # Grimoire — Language Guide
 
-Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.4.0.
+Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.6.0.
 
 Expressions live in inline code with the **`q=`** prefix (configurable under Settings):
 
@@ -21,7 +21,7 @@ Open notes in **Reading view** to see results when **Enable in Reading view** is
 |------|------|
 | Prefix | `q=` at the start of inline code (default) |
 | Body | Single PQL expression |
-| Style | Optional trailing `AS <style>` (not part of the expression) |
+| Style | Optional `AS <style>` postfix on any subexpression |
 | Scope | Always the **current note** being rendered |
 | Whitespace | Ignored outside quoted strings |
 
@@ -308,11 +308,13 @@ When a result contains **both** markdown markers and HTML tags, it is rendered a
 
 ### Display styles (`AS`)
 
-Append **`AS <style>`** after the expression to force a Pretty-style layout. `AS` is a query suffix: parse the expression first, then an optional style name. A frontmatter field named `as` still works (`as AS card`).
+Apply **`AS <style>`** after any subexpression to wrap that value in a Pretty-style layout. Root `expr AS card` still styles the whole result. A frontmatter field named `as` still works (`as AS card`).
 
 ```markdown
 `q= default(characterStatus, "<font color=\"#595959\">Alive, Dead, Undead.</font>") AS card`
-`q= file.tags AS card`
+`q= default(location AS card, "*Unknown*")`
+`q= choice(any(location), "**Location:** " + (location AS card) + " <br>", "")`
+`q= file.tags AS tag`
 `q= parent AS button`
 `q= cssclasses AS cards-code`
 `q= tags AS inline`
@@ -321,11 +323,14 @@ Append **`AS <style>`** after the expression to force a Pretty-style layout. `AS
 
 | Style | Aliases | Result |
 |-------|---------|--------|
-| `card` | `cards` | Pill chips. One chip per list item; a single string is one chip. Tag-like tokens (`#alpha`, `alpha`) are clickable search chips. Other chips render HTML when tags are present. |
+| `card` | `cards` | Text pill chips. One chip per list item; a single string is one chip. HTML inside a chip is rendered when tags are present. |
+| `tag` | `tags` | Tag chips with a leading `#`. Click opens a vault tag search; Ctrl/Cmd-click opens in a new tab. |
 | `button` | `buttons` | Link buttons for `[[Note]]`, `[label](url)`, or `https://…` |
 | `cards-code` | `code`, `code-card`, `codecard` | Monospace chips with a leading `.` |
 | `inline` | | Comma-separated text |
 | `list` | | Bulleted `<ul>` |
+
+**Targeting:** `AS` binds after a full subexpression (same precedence as today’s trailing suffix). Use parentheses to style only part of a concat — `"**Location:** " + (location AS card)` styles `location` and leaves the markdown label plain. Concatenating styled and plain parts renders as an inline mix of chips and markdown/HTML.
 
 Without `AS`, output uses the default markdown / HTML / plain pipeline above.
 

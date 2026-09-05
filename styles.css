@@ -55,6 +55,18 @@
 	display: inline;
 }
 
+.grim-fragments {
+	display: inline;
+}
+
+.grim-fragment {
+	display: inline;
+}
+
+.grim-fragment-styled {
+	vertical-align: baseline;
+}
+
 .pq-error {
 	color: var(--text-error);
 	font-family: var(--font-monospace);
@@ -135,7 +147,7 @@
 	background: var(--background-secondary);
 }
 
-/* Grimoire display styles (`AS card`, `AS button`, …) */
+/* Grimoire display styles (`AS card`, `AS tag`, `AS button`, …) */
 
 .grim-button {
 	display: inline-block;

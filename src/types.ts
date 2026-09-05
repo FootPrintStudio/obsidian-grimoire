@@ -1,4 +1,4 @@
-import type { LinkOpenBehavior } from "./renderStyle";
+import type { LinkOpenBehavior, RenderStyle } from "./renderStyle";
 
 export interface PropertyQuerySettings {
 	inlinePrefix: string;
@@ -32,6 +32,19 @@ export interface PqDuration {
 	readonly calendar?: ReadonlyArray<{ readonly amount: number; readonly unit: string }>;
 }
 
+/** Value wrapped with an `AS <style>` postfix. */
+export interface PqStyled {
+	readonly __pqStyled: true;
+	readonly value: Value;
+	readonly style: RenderStyle;
+}
+
+/** Mixed plain + styled parts from concatenating styled subexpressions. */
+export interface PqFragments {
+	readonly __pqFragments: true;
+	readonly parts: Value[];
+}
+
 export type OutputKind = "empty" | "markdown" | "html" | "text";
 
 export type Value =
@@ -41,6 +54,8 @@ export type Value =
 	| string
 	| PqDate
 	| PqDuration
+	| PqStyled
+	| PqFragments
 	| Value[]
 	| { [key: string]: Value };
 
@@ -68,4 +83,5 @@ export type AstNode =
 	| { kind: "pair"; key: AstNode; value: AstNode }
 	| { kind: "unary"; op: string; arg: AstNode }
 	| { kind: "binary"; op: string; left: AstNode; right: AstNode }
-	| { kind: "call"; callee: string; args: AstNode[] };
+	| { kind: "call"; callee: string; args: AstNode[] }
+	| { kind: "styled"; expr: AstNode; style: RenderStyle };

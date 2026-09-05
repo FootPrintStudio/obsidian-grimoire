@@ -1,6 +1,12 @@
 import {
 	coerceForConcat,
+	flattenFragmentParts,
+	isPqFragments,
+	isPqStyled,
 	isWildcardKey,
+	pqFragments,
+	pqStyled,
+	unwrapForTruthiness,
 	valueToPlainString,
 	valuesEqual,
 } from "./coerce";
@@ -25,19 +31,20 @@ import {
 } from "./dates";
 import { getMemberValue, getFileField, resolveIdent } from "./context";
 import { parseExpression, parseQuery } from "./parse";
-import type { RenderStyle } from "./renderStyle";
 import type { AstNode, FileMeta, QueryContext, Value } from "./types";
 
 function isTruthy(value: Value): boolean {
-	if (value === null || value === undefined || value === false) return false;
-	if (value === "") return false;
-	if (Array.isArray(value)) return value.length > 0;
+	const inner = unwrapForTruthiness(value);
+	if (inner === null || inner === undefined || inner === false) return false;
+	if (inner === "") return false;
+	if (Array.isArray(inner)) return inner.length > 0;
 	return true;
 }
 
 function fnDefault(value: Value, fallback: Value): Value {
 	if (!isTruthy(value)) return fallback;
-	if (Array.isArray(value) && value.length === 0) return fallback;
+	const inner = unwrapForTruthiness(value);
+	if (Array.isArray(inner) && inner.length === 0) return fallback;
 	return value;
 }
 
@@ -54,37 +61,50 @@ function fnAny(...args: Value[]): boolean {
 }
 
 function fnContains(hay: Value, needle: Value): boolean {
-	if (hay === null || needle === null) return false;
-	if (typeof hay === "string" && typeof needle === "string") return hay.includes(needle);
-	if (Array.isArray(hay)) {
-		return hay.some((item) => {
-			if (typeof item === "string" && typeof needle === "string") return item.includes(needle);
-			return valuesEqual(item, needle);
+	const h = unwrapForTruthiness(hay);
+	const n = unwrapForTruthiness(needle);
+	if (h === null || n === null) return false;
+	if (typeof h === "string" && typeof n === "string") return h.includes(n);
+	if (Array.isArray(h)) {
+		return h.some((item) => {
+			if (typeof item === "string" && typeof n === "string") return item.includes(n);
+			return valuesEqual(item, n);
 		});
 	}
 	return false;
 }
 
 function fnEcontains(hay: Value, needle: Value): boolean {
-	if (hay === null || needle === null) return false;
-	if (typeof hay === "string" && typeof needle === "string") return hay.includes(needle);
-	if (Array.isArray(hay)) return hay.some((item) => valuesEqual(item, needle));
-	if (typeof hay === "object" && !isPqDate(hay) && !isPqDuration(hay) && typeof needle === "string") {
-		return Object.prototype.hasOwnProperty.call(hay, needle);
+	const h = unwrapForTruthiness(hay);
+	const n = unwrapForTruthiness(needle);
+	if (h === null || n === null) return false;
+	if (typeof h === "string" && typeof n === "string") return h.includes(n);
+	if (Array.isArray(h)) return h.some((item) => valuesEqual(item, n));
+	if (
+		typeof h === "object" &&
+		!isPqDate(h) &&
+		!isPqDuration(h) &&
+		!isPqStyled(h) &&
+		!isPqFragments(h) &&
+		typeof n === "string"
+	) {
+		return Object.prototype.hasOwnProperty.call(h, n);
 	}
 	return false;
 }
 
 function fnSlice(list: Value, start: Value, end?: Value): Value {
-	if (!Array.isArray(list)) return [];
+	const inner = unwrapForTruthiness(list);
+	if (!Array.isArray(inner)) return [];
 	const s = Number(start);
-	const e = end === undefined ? list.length : Number(end);
-	return list.slice(s, e);
+	const e = end === undefined ? inner.length : Number(end);
+	return inner.slice(s, e);
 }
 
 function fnLength(value: Value): number {
-	if (value === null) return 0;
-	if (typeof value === "string" || Array.isArray(value)) return value.length;
+	const inner = unwrapForTruthiness(value);
+	if (inner === null) return 0;
+	if (typeof inner === "string" || Array.isArray(inner)) return inner.length;
 	return 0;
 }
 
@@ -96,8 +116,9 @@ function fnCoalesce(...args: Value[]): Value {
 }
 
 function fnJoin(list: Value, sep: Value): string {
-	if (!Array.isArray(list)) return valueToPlainString(list);
-	return list.map((v) => coerceForConcat(v)).join(String(sep ?? ", "));
+	const inner = unwrapForTruthiness(list);
+	if (!Array.isArray(inner)) return valueToPlainString(list);
+	return inner.map((v) => coerceForConcat(v)).join(String(sep ?? ", "));
 }
 
 function evalSelect(args: AstNode[], ctx: QueryContext): Value {
@@ -112,7 +133,7 @@ function evalSelect(args: AstNode[], ctx: QueryContext): Value {
 		}
 		const pairKey = evalNode(arg.key, ctx);
 		const pairValue = evalNode(arg.value, ctx);
-		if (isWildcardKey(pairKey)) {
+		if (isWildcardKey(unwrapForTruthiness(pairKey))) {
 			fallback = pairValue;
 			continue;
 		}
@@ -133,7 +154,12 @@ function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 		if (node.object.kind === "ident" && node.object.name === "file") {
 			return getFileField(ctx.file, node.property);
 		}
-		if (node.object.kind === "member" && node.object.object.kind === "ident" && node.object.object.name === "this" && node.object.property === "file") {
+		if (
+			node.object.kind === "member" &&
+			node.object.object.kind === "ident" &&
+			node.object.object.name === "this" &&
+			node.object.property === "file"
+		) {
 			return getFileField(ctx.file, node.property);
 		}
 		const base = evalNode(node.object, ctx);
@@ -142,7 +168,15 @@ function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 	return evalNode(node, ctx);
 }
 
+function hasStyledOrFragments(value: Value): boolean {
+	return isPqStyled(value) || isPqFragments(value);
+}
+
 function addValues(a: Value, b: Value): Value {
+	if (hasStyledOrFragments(a) || hasStyledOrFragments(b)) {
+		return pqFragments([...flattenFragmentParts(a), ...flattenFragmentParts(b)]);
+	}
+
 	const da = toPqDate(a);
 	const db = toPqDate(b);
 	const dura = toPqDuration(a);
@@ -158,33 +192,39 @@ function addValues(a: Value, b: Value): Value {
 }
 
 function subtractValues(a: Value, b: Value): Value {
-	const da = toPqDate(a);
-	const db = toPqDate(b);
-	const dura = toPqDuration(a);
-	const durb = toPqDuration(b);
+	const ua = unwrapForTruthiness(a);
+	const ub = unwrapForTruthiness(b);
+	const da = toPqDate(ua);
+	const db = toPqDate(ub);
+	const dura = toPqDuration(ua);
+	const durb = toPqDuration(ub);
 
 	if (da && db) return subtractDates(da, db);
 	if (da && durb) return subtractDateDuration(da, durb);
 	if (dura && durb) return subtractDurations(dura, durb);
-	return (Number(a) || 0) - (Number(b) || 0);
+	return (Number(ua) || 0) - (Number(ub) || 0);
 }
 
 function multiplyValues(a: Value, b: Value): Value {
-	const dura = toPqDuration(a);
-	const durb = toPqDuration(b);
-	if (dura && typeof b === "number") return scaleDuration(dura, b);
-	if (durb && typeof a === "number") return scaleDuration(durb, a);
-	return (Number(a) || 0) * (Number(b) || 0);
+	const ua = unwrapForTruthiness(a);
+	const ub = unwrapForTruthiness(b);
+	const dura = toPqDuration(ua);
+	const durb = toPqDuration(ub);
+	if (dura && typeof ub === "number") return scaleDuration(dura, ub);
+	if (durb && typeof ua === "number") return scaleDuration(durb, ua);
+	return (Number(ua) || 0) * (Number(ub) || 0);
 }
 
 function divideValues(a: Value, b: Value): Value {
-	const dura = toPqDuration(a);
-	if (dura && typeof b === "number" && b !== 0) return scaleDuration(dura, 1 / b);
-	return (Number(a) || 0) / (Number(b) || 1);
+	const ua = unwrapForTruthiness(a);
+	const ub = unwrapForTruthiness(b);
+	const dura = toPqDuration(ua);
+	if (dura && typeof ub === "number" && ub !== 0) return scaleDuration(dura, 1 / ub);
+	return (Number(ua) || 0) / (Number(ub) || 1);
 }
 
 function compareOp(op: string, left: Value, right: Value): Value {
-	const cmp = compareValues(left, right);
+	const cmp = compareValues(unwrapForTruthiness(left), unwrapForTruthiness(right));
 	switch (op) {
 		case "==":
 			return valuesEqual(left, right);
@@ -216,16 +256,19 @@ function evalNode(node: AstNode, ctx: QueryContext): Value {
 		case "index": {
 			const base = evalNode(node.object, ctx);
 			const indexVal = evalNode(node.index, ctx);
-			if (Array.isArray(base)) {
-				const idx = Number(indexVal);
-				return !Number.isNaN(idx) ? (base[idx] ?? null) : null;
+			const inner = unwrapForTruthiness(base);
+			if (Array.isArray(inner)) {
+				const idx = Number(unwrapForTruthiness(indexVal));
+				return !Number.isNaN(idx) ? (inner[idx] ?? null) : null;
 			}
 			return null;
 		}
+		case "styled":
+			return pqStyled(evalNode(node.expr, ctx), node.style);
 		case "unary": {
 			const v = evalNode(node.arg, ctx);
 			if (node.op === "not") return !isTruthy(v);
-			if (node.op === "-") return -(Number(v) || 0);
+			if (node.op === "-") return -(Number(unwrapForTruthiness(v)) || 0);
 			return null;
 		}
 		case "binary": {
@@ -241,7 +284,7 @@ function evalNode(node: AstNode, ctx: QueryContext): Value {
 				case "/":
 					return divideValues(left, right);
 				case "%":
-					return (Number(left) || 0) % (Number(right) || 1);
+					return (Number(unwrapForTruthiness(left)) || 0) % (Number(unwrapForTruthiness(right)) || 1);
 				case "==":
 				case "!=":
 				case "<":
@@ -304,16 +347,18 @@ export function evaluateExpression(source: string, ctx: QueryContext): Value {
 export function evaluateExpressionSafe(
 	source: string,
 	ctx: QueryContext,
-): { ok: true; value: Value; style: RenderStyle | null } | { ok: false; error: string } {
+): { ok: true; value: Value } | { ok: false; error: string } {
 	try {
-		const { ast, style } = parseQuery(source);
-		return { ok: true, value: evalNode(ast, ctx), style };
+		const ast = parseQuery(source);
+		return { ok: true, value: evalNode(ast, ctx) };
 	} catch (e) {
 		return { ok: false, error: e instanceof Error ? e.message : String(e) };
 	}
 }
 
-export function createTestContext(overrides: Partial<QueryContext> & { fields?: Record<string, Value> } = {}): QueryContext {
+export function createTestContext(
+	overrides: Partial<QueryContext> & { fields?: Record<string, Value> } = {},
+): QueryContext {
 	const now = pqDate(Date.now());
 	const file: FileMeta = {
 		name: "Test",

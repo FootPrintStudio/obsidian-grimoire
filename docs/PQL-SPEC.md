@@ -1,4 +1,4 @@
-# Property Query Language (PQL) — Specification v0.3
+# Property Query Language (PQL) — Specification v0.4
 
 Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
@@ -116,11 +116,12 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 ## Query grammar
 
 ```
-query := expression [ "AS" style ]
-style := "card" | "cards" | "button" | "buttons" | "cards-code" | "code" | "inline" | "list" | …
+expression := orExpr [ "AS" style ]
+query := expression
+style := "card" | "cards" | "tag" | "tags" | "button" | "buttons" | "cards-code" | "code" | "inline" | "list" | …
 ```
 
-`AS` is a trailing suffix, not an expression operator. `as` as a field name is still an identifier (`as AS card`).
+`AS` is an expression postfix (available on call arguments and inside parentheses), not a binary operator. `as` as a field name is still an identifier (`as AS card`). Root `expr AS card` styles the whole result; `default(location AS card, "*Unknown*")` styles only the location branch. Concat mixes require parens: `"**Location:** " + (location AS card)`.
 
 Hyphenated styles (`cards-code`) are a single style token.
 
@@ -132,7 +133,8 @@ Hyphenated styles (`cards-code`) are a single style token.
 | HTML tags only (no markdown markers) | `innerHTML` |
 | Plain text / numbers | text node |
 | `null` | empty |
-| `AS card` / `button` / `cards-code` / `inline` / `list` | Pretty-style chips, buttons, or list |
+| Styled value (`AS …`) | Text pills, tag chips, buttons, or list |
+| Fragments (plain + styled concat) | Inline mix of markdown/HTML/text and styled chips |
 | Error | red inline `pq-error` |
 
 ## Date formatting tokens

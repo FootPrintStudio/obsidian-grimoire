@@ -41,15 +41,25 @@ Enable **Grimoire** under Community plugins, then reload Obsidian.
 
 ## Display styles
 
-Append **`AS <style>`** after the expression. `AS` is a trailing suffix, not an operator — a field named `as` still works (`as AS card`).
+Apply **`AS <style>`** after any subexpression (root, call argument, or parenthesized group). A field named `as` still works (`as AS card`).
 
 | Suffix | Result |
 |--------|--------|
-| `AS card` / `AS cards` | Pill chips. Arrays become one chip per item. Tag-like values are clickable. HTML inside a card is rendered. |
+| `AS card` / `AS cards` | Text pill chips. Arrays become one chip per item. HTML inside a card is rendered. |
+| `AS tag` / `AS tags` | Tag chips with a leading `#`. Click opens a tag search (Ctrl/Cmd-click → new tab). |
 | `AS button` / `AS buttons` | Link buttons (`[[Note]]`, markdown links, or URLs) |
 | `AS cards-code` / `AS code` | Monospace chips with a leading `.` |
 | `AS inline` | Comma-separated text |
 | `AS list` | Bulleted list |
+
+Target only part of a result with subexpression `AS`:
+
+```markdown
+`q= default(location AS card, "*Unknown*")`
+`q= choice(any(location), "**Location:** " + (location AS card) + " <br>", "")`
+```
+
+Use parentheses when concatenating so the style does not wrap the whole sum. Mixed plain + styled parts render inline together.
 
 This replaces Property Pretty’s `` `property.card` `` / `` `~ tags.cards` `` syntax for Grimoire queries. Pretty can stay installed for existing `~` snippets.
 
@@ -84,7 +94,8 @@ The settings UI includes **README** and **Guide** tabs with in-app documentation
 ## v0.3.0 features
 
 - Plugin display name **Grimoire**
-- Trailing **`AS <style>`** display styles: card, button, cards-code, inline, list
+- Subexpression **`AS <style>`** display styles: card, tag, button, cards-code, inline, list (target branches / paren groups; mix with markdown via concat)
+
 - Button link-open setting (from Property Pretty)
 
 ## v0.2.0 features
