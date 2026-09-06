@@ -120,6 +120,84 @@ export class PropertyQuerySettingTab extends PluginSettingTab {
 					});
 			});
 
+		containerEl.createEl("h3", { text: "AS badge / pill tones" });
+		containerEl.createEl("p", {
+			cls: "setting-item-description",
+			text: "Comma-separated whole-word matches (case-insensitive). Checked in order: danger → warn → success → muted. Example: dead matches Dead but not Undead.",
+		});
+
+		new Setting(containerEl)
+			.setName("Success triggers")
+			.setDesc("Values containing any of these map to the success (green) badge tone.")
+			.addTextArea((text) =>
+				text
+					.setPlaceholder(DEFAULT_SETTINGS.badgeSuccessTriggers)
+					.setValue(this.plugin.settings.badgeSuccessTriggers)
+					.onChange(async (value) => {
+						this.plugin.settings.badgeSuccessTriggers =
+							value.trim() || DEFAULT_SETTINGS.badgeSuccessTriggers;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Warn triggers")
+			.setDesc("Values containing any of these map to the warn (amber) badge tone.")
+			.addTextArea((text) =>
+				text
+					.setPlaceholder(DEFAULT_SETTINGS.badgeWarnTriggers)
+					.setValue(this.plugin.settings.badgeWarnTriggers)
+					.onChange(async (value) => {
+						this.plugin.settings.badgeWarnTriggers =
+							value.trim() || DEFAULT_SETTINGS.badgeWarnTriggers;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Danger triggers")
+			.setDesc("Values containing any of these map to the danger (red) badge tone.")
+			.addTextArea((text) =>
+				text
+					.setPlaceholder(DEFAULT_SETTINGS.badgeDangerTriggers)
+					.setValue(this.plugin.settings.badgeDangerTriggers)
+					.onChange(async (value) => {
+						this.plugin.settings.badgeDangerTriggers =
+							value.trim() || DEFAULT_SETTINGS.badgeDangerTriggers;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		containerEl.createEl("h3", { text: "AS meter / stars" });
+
+		new Setting(containerEl)
+			.setName("Filled character")
+			.setDesc("Glyph used for filled meter slots (first character if more than one is entered).")
+			.addText((text) =>
+				text
+					.setPlaceholder(DEFAULT_SETTINGS.meterFilledChar)
+					.setValue(this.plugin.settings.meterFilledChar)
+					.onChange(async (value) => {
+						this.plugin.settings.meterFilledChar =
+							value.trim() || DEFAULT_SETTINGS.meterFilledChar;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Empty character")
+			.setDesc("Glyph used for empty meter slots (first character if more than one is entered).")
+			.addText((text) =>
+				text
+					.setPlaceholder(DEFAULT_SETTINGS.meterEmptyChar)
+					.setValue(this.plugin.settings.meterEmptyChar)
+					.onChange(async (value) => {
+						this.plugin.settings.meterEmptyChar =
+							value.trim() || DEFAULT_SETTINGS.meterEmptyChar;
+						await this.plugin.saveSettings();
+					}),
+			);
+
 		new Setting(containerEl)
 			.setName("Debug mode")
 			.setDesc("Show full parse/evaluation errors inline instead of a generic message.")

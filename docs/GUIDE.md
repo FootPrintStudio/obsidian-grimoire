@@ -367,11 +367,11 @@ Apply **`AS <style>`** after any subexpression to wrap that value in a Pretty-st
 |-------|---------|--------|
 | `card` | `cards` | Text pill chips. One chip per list item; a single string is one chip. HTML inside a chip is rendered when tags are present. |
 | `tag` | `tags` | Tag chips with a leading `#`. Click opens a vault tag search; Ctrl/Cmd-click opens in a new tab. |
-| `badge` | `pill` | Compact status chip; tone is inferred from text (alive/ok → success, warn/undead → warn, dead/error → danger). |
+| `badge` | `pill` | Compact status chip; tone from Settings keyword lists (default: alive/ok → success, warn/undead → warn, dead/error → danger). |
 | `callout` | | Obsidian-like callout box. Optional prefix `note:` / `tip:` / `warning:` / `error:` sets the type. |
 | `progress` | | Bar from `0–1`, percent (`75`), or fraction (`3/4`). |
-| `meter` | `stars` | Discrete 1–5 star rating from a number, `0–1`, percent, or `n/m`. |
-| `image` | `img` | Vault path, `![](…)`, or wiki embed rendered as media. |
+| `meter` | `stars` | Discrete 1–5 rating; filled/empty glyphs from Settings (default ★ / ☆). |
+| `image` | `img` | Vault path, `![](…)`, or wiki embed rendered like `![[…]]` (full column/cell width). |
 | `wiki` | `wikilink` | Wikilink (or URL) styling without button chrome. |
 | `button` | `buttons` | Link buttons for `[[Note]]`, `[label](url)`, or `https://…` |
 | `cards-code` | `code`, `code-card`, `codecard` | Monospace chips with a leading `.` |
@@ -433,6 +433,8 @@ All options are under **Settings → Community plugins → Grimoire**.
 | **Syntax highlight inline queries** | on | Apply token colors in Source mode and Live Preview. In Reading view, highlights source only when evaluation is **off**. |
 | **Refresh on metadata change** | off | Re-render open Reading views when frontmatter or embedded note metadata changes. |
 | **Button link open** | Same as Obsidian links | Default pane for `AS button` internal links. Ctrl/Cmd and middle-click still override. |
+| **Badge success / warn / danger triggers** | alive/ok…, warn/undead…, dead/error… | Comma-separated substrings that set `AS badge` / `AS pill` tone (danger → warn → success → muted). |
+| **Meter filled / empty character** | ★ / ☆ | Glyphs for filled and empty `AS meter` / `AS stars` slots. |
 | **Debug mode** | off | Show full parse/evaluation error text instead of *Grimoire error*. |
 
 Changing **Enable in Reading view**, **Syntax highlight**, or **Inline prefix** re-renders open markdown previews so results update without reopening the note.

@@ -357,13 +357,38 @@
 	color: var(--color-orange, var(--text-accent));
 }
 
-.grim-image {
-	display: inline-block;
+/* Image style hosts must be block-level so embeds can fill the column/cell. */
+.pq-inline:has(.grim-image-host),
+.grim-fragment-styled:has(.grim-image-host),
+.grim-image-host,
+.grim-image-wrap {
+	display: block;
+	width: 100%;
 	max-width: 100%;
-	max-height: 12em;
+}
+
+.grim-image-wrap > p {
+	margin: 0;
+}
+
+.grim-styled .image-embed,
+.grim-styled .internal-embed.image-embed,
+.grim-image-wrap .image-embed,
+.grim-image-wrap .internal-embed.image-embed {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+}
+
+.grim-styled .image-embed img,
+.grim-image-wrap .image-embed img,
+.grim-image {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	height: auto;
+	object-fit: contain;
 	border-radius: var(--radius-s, 5px);
-	vertical-align: middle;
-	object-fit: cover;
 }
 
 .grim-wiki {

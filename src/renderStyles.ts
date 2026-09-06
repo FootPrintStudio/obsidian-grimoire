@@ -1,5 +1,5 @@
-import type { App } from "obsidian";
-import { TFile } from "obsidian";
+import type { App, MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownRenderChild, MarkdownRenderer, TFile } from "obsidian";
 import { containsHtmlTag } from "./coerce";
 import {
 	getHostname,
@@ -10,6 +10,23 @@ import {
 	resolveOpenMode,
 } from "./parseLink";
 import type { LinkOpenBehavior, RenderStyle } from "./renderStyle";
+import { resolveBadgeToneClass, resolveMeterGlyphs } from "./styleOptions";
+import type { PropertyQuerySettings } from "./types";
+
+class ImageEmbedRenderer extends MarkdownRenderChild {
+	constructor(
+		container: HTMLElement,
+		private app: App,
+		private markdown: string,
+		private sourcePath: string,
+	) {
+		super(container);
+	}
+
+	onload(): void {
+		void MarkdownRenderer.render(this.app, this.markdown, this.containerEl, this.sourcePath, this);
+	}
+}
 
 function setRichText(el: HTMLElement, text: string): void {
 	if (containsHtmlTag(text)) {
@@ -82,21 +99,13 @@ function renderList(el: HTMLElement, values: string[]): void {
 	}
 }
 
-function badgeToneClass(text: string): string {
-	const lower = text.trim().toLowerCase();
-	if (/(dead|error|fail|danger|critical|missing)/.test(lower)) return "grim-badge-danger";
-	if (/(warn|warning|undead|pending|unknown)/.test(lower)) return "grim-badge-warn";
-	if (/(alive|ok|success|active|complete|done)/.test(lower)) return "grim-badge-success";
-	return "grim-badge-muted";
-}
-
-function renderBadge(el: HTMLElement, values: string[]): void {
+function renderBadge(el: HTMLElement, values: string[], settings: PropertyQuerySettings): void {
 	const container = el.createSpan({ cls: "grim-card-container" });
 	for (const value of values) {
 		const text = value.trim();
 		if (!text) continue;
 		const badge = container.createSpan({
-			cls: `grim-badge ${badgeToneClass(text)}`,
+			cls: `grim-badge ${resolveBadgeToneClass(text, settings)}`,
 		});
 		setRichText(badge, text);
 	}
@@ -171,17 +180,44 @@ function parseMeter(value: string): number {
 	return Math.max(0, Math.min(5, Math.round((n / 100) * 5)));
 }
 
-function renderMeter(el: HTMLElement, values: string[]): void {
+function renderMeter(el: HTMLElement, values: string[], settings: PropertyQuerySettings): void {
+	const { filled: filledChar, empty: emptyChar } = resolveMeterGlyphs(settings);
 	for (const value of values) {
 		const filled = parseMeter(value);
 		const wrap = el.createSpan({ cls: "grim-meter", attr: { title: `${filled}/5` } });
 		for (let i = 1; i <= 5; i++) {
 			wrap.createSpan({
 				cls: i <= filled ? "grim-meter-star is-filled" : "grim-meter-star",
-				text: i <= filled ? "★" : "☆",
+				text: i <= filled ? filledChar : emptyChar,
 			});
 		}
 	}
+}
+
+/** Normalize a path / markdown / wiki value to an Obsidian image embed (`![[…]]` or `![](…)`). */
+function toImageEmbedMarkdown(raw: string, app: App, sourcePath: string): string | null {
+	let path = raw.trim();
+	if (!path) return null;
+
+	const md = path.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+	if (md) {
+		const target = md[2]!.trim();
+		if (/^https?:\/\//i.test(target) || target.startsWith("app://") || target.startsWith("data:")) {
+			return `![](${target})`;
+		}
+		path = target;
+	}
+
+	const wiki = path.match(/^!?\[\[([^\]]+)\]\]$/);
+	if (wiki) path = wiki[1]!.trim();
+
+	if (/^https?:\/\//i.test(path) || path.startsWith("app://") || path.startsWith("data:")) {
+		return `![](${path})`;
+	}
+
+	const file = app.metadataCache.getFirstLinkpathDest(path, sourcePath);
+	if (file instanceof TFile) return `![[${file.path}]]`;
+	return `![[${path}]]`;
 }
 
 function resolveImageSrc(app: App, raw: string, sourcePath: string): string | null {
@@ -198,15 +234,34 @@ function resolveImageSrc(app: App, raw: string, sourcePath: string): string | nu
 	return null;
 }
 
-function renderImage(el: HTMLElement, values: string[], app: App, sourcePath: string): void {
+function renderImageFallback(el: HTMLElement, values: string[], app: App, sourcePath: string): void {
 	for (const value of values) {
 		const src = resolveImageSrc(app, value, sourcePath);
 		if (!src) continue;
-		const img = el.createEl("img", {
+		el.createEl("img", {
 			cls: "grim-image",
 			attr: { src, alt: value.trim() },
 		});
-		img.addClass("grim-image");
+	}
+}
+
+function renderImage(
+	el: HTMLElement,
+	values: string[],
+	app: App,
+	sourcePath: string,
+	ctx?: MarkdownPostProcessorContext,
+): void {
+	el.addClass("grim-image-host");
+	if (!ctx) {
+		renderImageFallback(el, values, app, sourcePath);
+		return;
+	}
+	for (const value of values) {
+		const markdown = toImageEmbedMarkdown(value, app, sourcePath);
+		if (!markdown) continue;
+		const wrap = el.createDiv({ cls: "grim-image-wrap" });
+		ctx.addChild(new ImageEmbedRenderer(wrap, app, markdown, sourcePath));
 	}
 }
 
@@ -300,13 +355,16 @@ export function renderStyledValue(
 	values: string[],
 	app: App,
 	sourcePath: string,
-	linkOpenBehavior: LinkOpenBehavior,
+	settings: PropertyQuerySettings,
+	ctx?: MarkdownPostProcessorContext,
 ): void {
 	el.empty();
 	el.addClass("pq-result");
 	el.addClass("grim-styled");
 
 	if (values.length === 0) return;
+
+	const linkOpenBehavior = settings.linkOpenBehavior;
 
 	switch (style) {
 		case "button":
@@ -328,7 +386,7 @@ export function renderStyledValue(
 			renderList(el, values);
 			break;
 		case "badge":
-			renderBadge(el, values);
+			renderBadge(el, values, settings);
 			break;
 		case "callout":
 			renderCallout(el, values);
@@ -337,10 +395,10 @@ export function renderStyledValue(
 			renderProgress(el, values);
 			break;
 		case "meter":
-			renderMeter(el, values);
+			renderMeter(el, values, settings);
 			break;
 		case "image":
-			renderImage(el, values, app, sourcePath);
+			renderImage(el, values, app, sourcePath, ctx);
 			break;
 		case "wiki":
 			renderWiki(el, values, app, sourcePath, linkOpenBehavior);

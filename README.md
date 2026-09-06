@@ -51,7 +51,7 @@ Apply **`AS <style>`** after any subexpression (root, call argument, or parenthe
 | `AS callout` | Callout box (`note:` / `tip:` / `warning:` / `error:` prefixes) |
 | `AS progress` | Progress bar from `0–1`, percent, or `n/m` |
 | `AS meter` / `AS stars` | Discrete 1–5 star rating |
-| `AS image` / `AS img` | Vault path / markdown / wiki image embed |
+| `AS image` / `AS img` | Vault path / markdown / wiki image embed (renders like `![[…]]`, fills available width) |
 | `AS wiki` / `AS wikilink` | Wikilink styling without button chrome |
 | `AS button` / `AS buttons` | Link buttons (`[[Note]]`, markdown links, or URLs) |
 | `AS cards-code` / `AS code` | Monospace chips with a leading `.` |
@@ -89,9 +89,19 @@ Syntax highlighting is controlled by **Syntax highlight inline queries** (on by 
 | **Syntax highlight inline queries** | on | Colorize `` `q= …` `` in the editor and in Reading view when evaluation is off |
 | **Refresh on metadata change** | off | Re-render Reading views when frontmatter or embedded metadata changes (may reset scroll) |
 | **Button link open** | Same as Obsidian links | Default pane for `AS button` internal links. Ctrl/Cmd and middle-click still override. |
+| **Badge success / warn / danger triggers** | alive/ok…, warn…, dead/error… | Substrings that color `AS badge` / `AS pill` |
+| **Meter filled / empty character** | ★ / ☆ | Glyphs for `AS meter` / `AS stars` |
 | **Debug mode** | off | Show full parse/evaluation errors inline instead of a generic message |
 
 The settings UI includes **README** and **Guide** tabs with in-app documentation.
+
+## v0.7.2 features
+
+- Settings for **`AS badge`/`pill` tone triggers** and **`AS meter`/`stars` glyphs**
+
+## v0.7.1 features
+
+- **`AS image` / `AS img`** renders via Obsidian `![[…]]` embeds and fills available column/cell width (no 12em height cap)
 
 ## v0.7.0 features
 

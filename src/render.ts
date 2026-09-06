@@ -97,7 +97,7 @@ function renderFragmentPart(
 	value: Value,
 	sourcePath: string,
 	ctx: MarkdownPostProcessorContext,
-	linkOpenBehavior: PropertyQuerySettings["linkOpenBehavior"],
+	settings: PropertyQuerySettings,
 ): void {
 	if (isPqStyled(value)) {
 		const wrap = host.createSpan({ cls: "grim-fragment grim-fragment-styled" });
@@ -107,7 +107,8 @@ function renderFragmentPart(
 			valueToStyleItems(value.value),
 			app,
 			sourcePath,
-			linkOpenBehavior,
+			settings,
+			ctx,
 		);
 		return;
 	}
@@ -142,7 +143,8 @@ function renderQueryResult(
 			valueToStyleItems(value.value),
 			app,
 			sourcePath,
-			settings.linkOpenBehavior,
+			settings,
+			ctx,
 		);
 		return;
 	}
@@ -152,7 +154,7 @@ function renderQueryResult(
 		host.addClass("pq-result");
 		host.addClass("grim-fragments");
 		for (const part of value.parts) {
-			renderFragmentPart(app, host, part, sourcePath, ctx, settings.linkOpenBehavior);
+			renderFragmentPart(app, host, part, sourcePath, ctx, settings);
 		}
 		return;
 	}

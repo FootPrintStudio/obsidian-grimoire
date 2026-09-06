@@ -35,7 +35,13 @@ export default class GrimoirePlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const data = (await this.loadData()) as Partial<PropertyQuerySettings> | null;
-		this.settings = { ...DEFAULT_SETTINGS, ...data };
+		this.settings = { ...DEFAULT_SETTINGS, ...(data ?? {}) };
+		for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof PropertyQuerySettings)[]) {
+			const value = this.settings[key];
+			if (value === undefined || value === null || value === "") {
+				this.settings[key] = DEFAULT_SETTINGS[key] as never;
+			}
+		}
 	}
 
 	async saveSettings(): Promise<void> {

@@ -7,6 +7,16 @@ export interface PropertyQuerySettings {
 	debugMode: boolean;
 	refreshOnMetadataChange: boolean;
 	linkOpenBehavior: LinkOpenBehavior;
+	/** Comma-separated substrings that map AS badge/pill text to success tone. */
+	badgeSuccessTriggers: string;
+	/** Comma-separated substrings that map AS badge/pill text to warn tone. */
+	badgeWarnTriggers: string;
+	/** Comma-separated substrings that map AS badge/pill text to danger tone. */
+	badgeDangerTriggers: string;
+	/** Glyph for filled AS meter / stars slots. */
+	meterFilledChar: string;
+	/** Glyph for empty AS meter / stars slots. */
+	meterEmptyChar: string;
 }
 
 export const DEFAULT_SETTINGS: PropertyQuerySettings = {
@@ -16,6 +26,11 @@ export const DEFAULT_SETTINGS: PropertyQuerySettings = {
 	debugMode: false,
 	refreshOnMetadataChange: false,
 	linkOpenBehavior: "default",
+	badgeSuccessTriggers: "alive, ok, success, active, complete, done",
+	badgeWarnTriggers: "warn, warning, undead, pending, unknown",
+	badgeDangerTriggers: "dead, error, fail, danger, critical, missing",
+	meterFilledChar: "★",
+	meterEmptyChar: "☆",
 };
 
 /** Branded date value (epoch ms, interpreted via Obsidian moment). */
