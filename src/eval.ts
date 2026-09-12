@@ -31,6 +31,7 @@ import {
 	toPqDate,
 	toPqDuration,
 } from "./dates";
+import { fnConv, fnInRange } from "./units";
 import { getMemberValue, getFileField, resolveIdent } from "./context";
 import { parseExpression, parseQuery } from "./parse";
 import type { AstNode, FileMeta, QueryContext, Value } from "./types";
@@ -331,6 +332,14 @@ const FUNCTION_MAP: Record<string, Fn> = {
 	durationformat: ([d, fmt]) => durationformat(d, fmt === undefined ? undefined : String(fmt)),
 	age: ([d, fmt]) => fnAge(d, fmt === undefined || fmt === null ? undefined : String(fmt)),
 	numberformat: ([n, fmt]) => numberformat(n, String(fmt ?? "0")),
+	conv: (args, rawArgs) => {
+		const unitArg = (evaluated: Value, raw: AstNode | undefined): string => {
+			if (raw?.kind === "ident") return raw.name;
+			return String(evaluated ?? "");
+		};
+		return fnConv(args[0] ?? null, unitArg(args[1] ?? null, rawArgs?.[1]), unitArg(args[2] ?? null, rawArgs?.[2]));
+	},
+	inrange: ([v, lo, hi]) => fnInRange(v, lo, hi),
 	length: ([v]) => fnLength(v),
 	coalesce: (args) => fnCoalesce(...args),
 	join: ([list, sep]) => fnJoin(list, sep),

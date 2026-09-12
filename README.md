@@ -95,6 +95,11 @@ Syntax highlighting is controlled by **Syntax highlight inline queries** (on by 
 
 The settings UI includes **README** and **Guide** tabs with in-app documentation.
 
+## v0.8.0 features
+
+- **`conv(value, from, to)`** — length / mass / temperature conversion (`ftin` → feet+inches string)
+- **`inRange(value, low, high)`** — inclusive boolean range check for `choice` and comparisons
+
 ## v0.7.2 features
 
 - Settings for **`AS badge`/`pill` tone triggers** and **`AS meter`/`stars` glyphs**

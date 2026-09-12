@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-grimoire",
-	"version": "0.7.2",
+	"version": "0.8.0",
 	"description": "Grimoire — inline metadata expressions for Obsidian.",
 	"main": "main.js",
 	"type": "module",

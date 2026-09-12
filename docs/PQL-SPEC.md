@@ -54,7 +54,7 @@ A frontmatter field named `file` (without `.`) is still accessible as a bare ide
 | Category | Operators |
 |----------|-----------|
 | Arithmetic | `+` `-` `*` `/` `%` |
-| Comparison | `==` `!=` `<` `>` `<=` `>=` |
+| Comparison | `==` `!=` `<` `>` `<=` `>=` (inclusive range: `inRange(value, low, high)`) |
 | Logical | `and`, `or`, `not`, `&&` |
 | Grouping | `( )` |
 | Member / index | `.property`, `[index]` |
@@ -100,6 +100,8 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | `durationformat(dur, fmt?)` | Format duration; without `fmt`, human-readable. With `fmt`, Luxon/Dataview duration tokens (`y`, `M`, `d`, `h`, `m`, `s`, …) plus `O` ordinals. Literal text in single quotes. Not the same token set as `dateformat`. |
 | `age(date)` / `age(date, fmt)` | Years since `date` (default), or duration-token format of elapsed span |
 | `numberformat(n, pattern)` | Number formatting (`0`, `0.00`, `,`, `%`) |
+| `conv(n, from, to)` | Unit conversion (length / mass / temperature; `ftin` → feet+inches string) |
+| `inRange(n, low, high)` | Inclusive range check; returns boolean |
 | `date(string \| now \| today)` | Parse ISO date string, or current time / start of today |
 | `length(v)` | String/list length |
 | `coalesce(a, b, …)` | First truthy value |

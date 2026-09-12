@@ -251,6 +251,35 @@ Formats numbers for stats lines. Patterns use `0` / `0.00` decimals, optional `,
 `q= numberformat(1234.5, "0,0.0")`
 ```
 
+### `conv(value, fromUnit, toUnit)`
+
+Converts a numeric value between units. Returns a **number** for most targets; **`ftin`** returns a feet+inches string (e.g. `5' 11"`).
+
+| Category | Units (aliases accepted) |
+|----------|--------------------------|
+| Length | `mm`, `cm`, `m`, `in`, `ft`, `ftin` (output only) |
+| Mass | `g`, `kg`, `lb`, `oz` |
+| Temperature | `c`, `f`, `k` |
+
+Cross-category conversion throws an error. Invalid or non-numeric values return empty.
+
+```markdown
+`q= conv(height, cm, ftin)`
+`q= numberformat(conv(weight, kg, lb), "0.0")`
+`q= conv(32, f, c)`
+```
+
+Unit names are case-insensitive (`cm`, `CM`, `centimeters`).
+
+### `inRange(value, low, high)`
+
+Returns **`true`** when `low <= value <= high` (inclusive bounds), else **`false`**. Use with `choice` for branching. Non-numeric operands → `false`.
+
+```markdown
+`q= choice(inRange(height, 150, 190), "OK", "Out of range")`
+`q= choice(inRange(numA, 1, 10), "in band", "out of band")`
+```
+
 ### `dur(amount, unit)` / `dur("text")`
 
 Creates a duration value.
