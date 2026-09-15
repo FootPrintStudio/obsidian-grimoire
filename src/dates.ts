@@ -1,4 +1,5 @@
 import { moment } from "obsidian";
+import { getEpochsApi } from "./epochsBridge";
 import type { PqDate, PqDuration, Value } from "./types";
 
 export function isPqDate(value: Value): value is PqDate {
@@ -9,7 +10,8 @@ export function isPqDuration(value: Value): value is PqDuration {
 	return typeof value === "object" && value !== null && "__pqDuration" in value && value.__pqDuration === true;
 }
 
-export function pqDate(ms: number): PqDate {
+export function pqDate(ms: number, calendarId?: string): PqDate {
+	if (calendarId) return { __pqDate: true, ms, calendarId };
 	return { __pqDate: true, ms };
 }
 
@@ -93,6 +95,14 @@ export function normalizeFormatTokens(format: string): string {
 }
 
 export function dateformat(value: Value, format: string): string {
+	if (isPqDate(value) && value.calendarId) {
+		const api = getEpochsApi();
+		if (api) {
+			const out = api.formatDate(value.ms, value.calendarId, format);
+			if (out) return out;
+		}
+		return "";
+	}
 	const m = toMoment(value);
 	if (!m) return "";
 	return m.format(normalizeFormatTokens(format));
@@ -258,6 +268,8 @@ function durationformatHuman(ms: number): string {
 
 export function durationformat(value: Value, format?: string): string {
 	if (!isPqDuration(value)) return "";
+	// Fantasy duration display when calendar parts carry a calendar hint via last date — not available here.
+	// Callers with calendar context use Epochs directly; keep Gregorian human/token path.
 	if (format) return formatDurationWithTokens(value.ms, format);
 	return durationformatHuman(value.ms);
 }
@@ -273,6 +285,14 @@ export function fnDate(value: Value): PqDate | null {
 	if (typeof value === "string") {
 		const keyword = resolveDateKeyword(value);
 		if (keyword) return keyword;
+		const api = getEpochsApi();
+		const fantasy = api?.parseDate(value);
+		if (fantasy) return pqDate(fantasy.ms, fantasy.calendarId);
+	}
+	if (value && typeof value === "object" && !isPqDate(value) && !Array.isArray(value)) {
+		const api = getEpochsApi();
+		const fantasy = api?.parseDate(value);
+		if (fantasy) return pqDate(fantasy.ms, fantasy.calendarId);
 	}
 	return toPqDate(value);
 }
@@ -295,11 +315,31 @@ export function fnDur(args: Value[]): PqDuration | null {
 }
 
 export function addDateDuration(date: PqDate, dur: PqDuration): PqDate {
-	return pqDate(applyDurationToMoment(moment(date.ms), dur, 1).valueOf());
+	if (date.calendarId && dur.calendar?.length) {
+		const api = getEpochsApi();
+		if (api) {
+			const ms = api.addDuration(date.ms, date.calendarId, dur.calendar, 1);
+			return pqDate(ms, date.calendarId);
+		}
+	}
+	return pqDate(
+		applyDurationToMoment(moment(date.ms), dur, 1).valueOf(),
+		date.calendarId,
+	);
 }
 
 export function subtractDateDuration(date: PqDate, dur: PqDuration): PqDate {
-	return pqDate(applyDurationToMoment(moment(date.ms), dur, -1).valueOf());
+	if (date.calendarId && dur.calendar?.length) {
+		const api = getEpochsApi();
+		if (api) {
+			const ms = api.addDuration(date.ms, date.calendarId, dur.calendar, -1);
+			return pqDate(ms, date.calendarId);
+		}
+	}
+	return pqDate(
+		applyDurationToMoment(moment(date.ms), dur, -1).valueOf(),
+		date.calendarId,
+	);
 }
 
 export function subtractDates(a: PqDate, b: PqDate): PqDuration {
@@ -332,6 +372,19 @@ export function compareValues(a: Value, b: Value): number {
 
 export function coerceYamlDate(value: unknown): Value {
 	if (value === null || value === undefined) return null;
+
+	const api = getEpochsApi();
+	if (api) {
+		if (typeof value === "string" && value.includes(":")) {
+			const fantasy = api.parseDate(value);
+			if (fantasy) return pqDate(fantasy.ms, fantasy.calendarId);
+		}
+		if (value && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+			const fantasy = api.parseDate(value);
+			if (fantasy) return pqDate(fantasy.ms, fantasy.calendarId);
+		}
+	}
+
 	if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
 		const m = moment(value);
 		if (m.isValid()) return pqDate(m.valueOf());

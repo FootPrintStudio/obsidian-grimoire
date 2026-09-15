@@ -1,6 +1,7 @@
 import { Compartment } from "@codemirror/state";
 import { Plugin, TFile } from "obsidian";
 import { pqEditorHighlightExtension } from "./editorHighlight";
+import { setGrimoireApp } from "./epochsBridge";
 import { processPropertyQueriesInElement } from "./render";
 import { rerenderAllMarkdownViews, rerenderViewsForFile } from "./refresh";
 import { PropertyQuerySettingTab } from "./settings";
@@ -12,6 +13,7 @@ export default class GrimoirePlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
+		setGrimoireApp(this.app);
 		this.addSettingTab(new PropertyQuerySettingTab(this.app, this));
 
 		// Run before Dataview (-100) so our queries and Dataview false-positive shields apply first.

@@ -328,13 +328,21 @@ Note: `dateformat` formats **dates**; `durationformat` formats **durations**. Do
 
 Parses an ISO-style date string, or the keywords **`now`** (current date/time) and **`today`** (start of local calendar day).
 
+With the **Epochs** plugin enabled, also accepts fantasy calendar dates:
+
+- String: `date("aether:312-Greentide-4")`
+- Frontmatter objects `{ calendar, year, month, day }` (coerced automatically)
+
 ```markdown
 `q= date("2000-01-01")`
 `q= dateformat(date(now), "yyyy-MM-dd HH:mm")`
 `q= dateformat(date(today), "yyyy-MM-dd")`
+`q= dateformat(date("aether:312-Greentide-4"), "MMMM d, y G")`
 ```
 
 Both quoted and unquoted forms work: `date("today")` and `date(today)`.
+
+Fantasy dates keep a calendar id. `date + dur(n, "years")` (and months / weeks / days) use that calendar’s lengths when Epochs is loaded. If Epochs is disabled, fantasy dates format as empty; Gregorian behaviour is unchanged. See the Epochs Guide for calendar notes under **Epoch Calendars/**.
 
 ### `length(value)`
 

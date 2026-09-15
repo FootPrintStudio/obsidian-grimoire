@@ -1,4 +1,5 @@
 import { isPqDate, isPqDuration } from "./dates";
+import { getEpochsApi } from "./epochsBridge";
 import type { OutputKind, PqFragments, PqStyled, Value } from "./types";
 import type { RenderStyle } from "./renderStyle";
 
@@ -45,7 +46,15 @@ export function valueToPlainString(value: Value): string {
 	if (typeof value === "boolean") return value ? "true" : "false";
 	if (typeof value === "number") return String(value);
 	if (typeof value === "string") return value;
-	if (isPqDate(value)) return new Date(value.ms).toISOString();
+	if (isPqDate(value)) {
+		if (value.calendarId) {
+			const api = getEpochsApi();
+			const formatted = api?.formatDate(value.ms, value.calendarId);
+			if (formatted) return formatted;
+			return "";
+		}
+		return new Date(value.ms).toISOString();
+	}
 	if (isPqDuration(value)) return `${value.ms}ms`;
 	if (isPqStyled(value)) return valueToPlainString(value.value);
 	if (isPqFragments(value)) return value.parts.map((part) => valueToPlainString(part)).join("");

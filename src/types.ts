@@ -33,10 +33,12 @@ export const DEFAULT_SETTINGS: PropertyQuerySettings = {
 	meterEmptyChar: "☆",
 };
 
-/** Branded date value (epoch ms, interpreted via Obsidian moment). */
+/** Branded date value (epoch ms, interpreted via Obsidian moment or Epochs). */
 export interface PqDate {
 	readonly __pqDate: true;
 	readonly ms: number;
+	/** When set, format/arithmetic may use the Epochs calendar with this id. */
+	readonly calendarId?: string;
 }
 
 /** Branded duration value (length in milliseconds). */
