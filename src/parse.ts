@@ -280,8 +280,13 @@ class Parser {
 			if (elements.length === 0) {
 				throw new Error("Empty brace group {} is not allowed");
 			}
+			// Single `{Value}` ≡ `{Value, ""}` (true-only binary branch).
 			if (elements.length === 1) {
-				throw new Error("Brace group needs at least two expressions, e.g. {key, value}");
+				return {
+					kind: "pair",
+					key: elements[0]!,
+					value: { kind: "literal", value: "" },
+				};
 			}
 			if (elements.length === 2) {
 				return { kind: "pair", key: elements[0]!, value: elements[1]! };

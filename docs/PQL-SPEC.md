@@ -1,4 +1,4 @@
-# Property Query Language (PQL) — Specification v0.5
+# Property Query Language (PQL) — Specification v0.6
 
 Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
@@ -83,13 +83,15 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | Function | Description |
 |----------|-------------|
 | `default(v, fallback)` | Return `v` if truthy/non-empty, else `fallback` |
-| `choice(cond, a, b)` | Boolean branch |
+| `choice(cond, {a, b})` / `choice(cond, {a})` | **Primary.** Binary branch; `{a}` ≡ `{a, ""}` |
+| `choice(cond, a, b)` | **Legacy** three-arg form |
 | `select(key, {k,v}, …)` | Key lookup; `{*, fallback}` wildcard |
-| `any(v, …candidates)` | One arg: non-empty; multi-arg: any candidate contained in property |
-| `exists(v)` | Explicit non-empty predicate (same truthiness as one-arg `any`) |
+| `any(v, …, {a, b}?)` | Trailing branch brace → arm; omit → boolean (one-arg non-empty / multi-arg containment) |
+| `exists(v, {a, b}?)` | Same truthiness as one-arg `any`; optional binary branch |
 | `slice(list, start, end?)` | List slice |
-| `contains(hay, needle)` | Substring / partial list match |
-| `econtains(hay, needle)` | Exact element match |
+| `contains({hay, needle}, {a, b})` | **Primary** two-brace branch; also `contains(hay, needle, {a, b})` |
+| `contains(hay, needle)` | **Legacy** boolean |
+| `econtains({hay, needle}, {a, b})` | **Primary** (exact element / object key); legacy boolean without branch brace |
 | `dateformat(date, fmt)` | Format date (Luxon tokens aliased to moment; `O` = ordinal after day token) |
 
 ### Tier 2
@@ -123,10 +125,11 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 
 | Form | AST | Used by |
 |------|-----|---------|
-| `{key, value}` | pair | `select(...)` arms |
-| `{a, b, c}` (3+ exprs) | tuple | `inRange({value, low, high}, {below, in, above})` |
+| `{value}` | pair with false arm `""` | Binary true-only branches (`choice` / `any` / `exists` / `contains` / `econtains`) |
+| `{key, value}` / `{ifTrue, ifFalse}` | pair | `select(...)` arms; binary branch arms |
+| `{a, b, c}` (3+ exprs) | tuple | `inRange({value, low, high}, {below, in, above})` only |
 
-Order is positional. There is no `{name: expr}` map syntax.
+Order is positional. There is no `{name: expr}` map syntax. Binary branch braces: `{Value}` ≡ `{Value, ""}`. `inRange` stays three-way (no singleton shorthand).
 
 ## Query grammar
 
