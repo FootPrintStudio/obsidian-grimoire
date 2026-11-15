@@ -78,6 +78,20 @@ export function tokenizeForHighlight(input: string): HighlightSegment[] {
 			continue;
 		}
 
+		// Bare wiki primary `[[…]]` — highlight as string-like.
+		if (c === "[" && input[i + 1] === "[") {
+			i += 2;
+			while (i < input.length) {
+				if (input[i] === "]" && input[i + 1] === "]") {
+					i += 2;
+					break;
+				}
+				i++;
+			}
+			push("string", start, i);
+			continue;
+		}
+
 		if (/[0-9]/.test(c) || (c === "." && /[0-9]/.test(input[i + 1] ?? ""))) {
 			i++;
 			while (i < input.length && /[0-9.]/.test(input[i]!)) i++;

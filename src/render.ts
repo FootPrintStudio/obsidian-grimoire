@@ -1,5 +1,6 @@
 import { App, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, TFile } from "obsidian";
 import { buildQueryContext } from "./context";
+import { attachVaultBridge } from "./crossNote";
 import { shieldDataviewInlineCodeFalsePositive } from "./dataviewCoexist";
 import {
 	classifyOutput,
@@ -11,6 +12,7 @@ import {
 import { durationformat } from "./dates";
 import { evaluateExpressionSafe } from "./eval";
 import { highlightExpressionHtml, splitPrefixExpression } from "./highlight";
+import { registerCrossNoteDeps } from "./refresh";
 import { renderStyledValue } from "./renderStyles";
 import type { PropertyQuerySettings, Value } from "./types";
 
@@ -187,8 +189,10 @@ function processInlineCodeElement(
 
 	codeEl.dataset.pqProcessed = "1";
 
-	const queryCtx = buildQueryContext(app, file);
+	const deps = new Set<string>();
+	const queryCtx = attachVaultBridge(buildQueryContext(app, file), app, sourcePath, deps);
 	const result = evaluateExpressionSafe(expr, queryCtx);
+	if (deps.size > 0) registerCrossNoteDeps(sourcePath, deps);
 
 	const host = document.createElement("span");
 	host.className = "pq-inline";

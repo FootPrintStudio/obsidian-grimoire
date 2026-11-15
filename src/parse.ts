@@ -5,6 +5,7 @@ type Token =
 	| { type: "number"; value: number }
 	| { type: "string"; value: string }
 	| { type: "ident"; value: string }
+	| { type: "wiki"; value: string }
 	| { type: "op"; value: string }
 	| { type: "lparen" }
 	| { type: "rparen" }
@@ -94,6 +95,23 @@ function tokenize(input: string): Token[] {
 		if (c === "}") {
 			tokens.push({ type: "rbrace" });
 			i++;
+			continue;
+		}
+		// Bare wiki primary `[[linkpath]]` before single `[` index brackets.
+		if (c === "[" && input[i + 1] === "[") {
+			i += 2;
+			let path = "";
+			while (i < input.length) {
+				if (input[i] === "]" && input[i + 1] === "]") {
+					i += 2;
+					break;
+				}
+				path += input[i];
+				i++;
+			}
+			const pipe = path.indexOf("|");
+			if (pipe >= 0) path = path.slice(0, pipe);
+			tokens.push({ type: "wiki", value: path.trim() });
 			continue;
 		}
 		if (c === "[") {
@@ -225,9 +243,16 @@ class Parser {
 				continue;
 			}
 			if (this.match({ type: "lbracket" })) {
-				const index = this.parseExpression();
+				const indices: AstNode[] = [];
+				do {
+					indices.push(this.parseExpression());
+				} while (this.match({ type: "comma" }));
 				this.expect({ type: "rbracket" });
-				node = { kind: "index", object: node, index };
+				if (indices.length === 1) {
+					node = { kind: "index", object: node, index: indices[0]! };
+				} else {
+					node = { kind: "index", object: node, index: { kind: "tuple", elements: indices } };
+				}
 				continue;
 			}
 			if (this.match({ type: "lparen" })) {
@@ -258,6 +283,10 @@ class Parser {
 		if (t.type === "string") {
 			this.advance();
 			return { kind: "literal", value: t.value };
+		}
+		if (t.type === "wiki") {
+			this.advance();
+			return { kind: "wiki", path: t.value };
 		}
 		if (t.type === "ident") {
 			this.advance();

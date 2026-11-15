@@ -27,6 +27,14 @@ describe("tokenizeForHighlight", () => {
 		const segments = tokenizeForHighlight("title AS card");
 		expect(segments.find((s) => s.text.toLowerCase() === "as")?.type).toBe("kw");
 	});
+
+	it("highlights bare [[wiki]] as a string span", () => {
+		const expr = "[[Alice]].title";
+		const segments = tokenizeForHighlight(expr);
+		expect(segments.find((s) => s.text === "[[Alice]]")?.type).toBe("string");
+		const covered = segments.map((s) => expr.slice(s.start, s.end)).join("");
+		expect(covered).toBe(expr);
+	});
 });
 
 describe("highlightExpressionHtml", () => {
