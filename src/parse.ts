@@ -77,6 +77,20 @@ function tokenize(input: string): Token[] {
 			continue;
 		}
 
+		// Unary `!` (where-brace negates) — after `!=` check above.
+		if (c === "!") {
+			tokens.push({ type: "op", value: "!" });
+			i++;
+			continue;
+		}
+
+		// `@` introducer for multi-note queries.
+		if (c === "@") {
+			tokens.push({ type: "op", value: "@" });
+			i++;
+			continue;
+		}
+
 		if (c === "(") {
 			tokens.push({ type: "lparen" });
 			i++;
@@ -231,6 +245,10 @@ class Parser {
 			this.advance();
 			return { kind: "unary", op: "-", arg: this.parseUnary() };
 		}
+		if (t.type === "op" && t.value === "!") {
+			this.advance();
+			return { kind: "unary", op: "!", arg: this.parseUnary() };
+		}
 		return this.parsePostfix();
 	}
 
@@ -276,6 +294,9 @@ class Parser {
 
 	private parsePrimary(): AstNode {
 		const t = this.peek();
+		if (t.type === "op" && t.value === "@") {
+			return this.parseAtQuery();
+		}
 		if (t.type === "number") {
 			this.advance();
 			return { kind: "literal", value: t.value };
@@ -383,6 +404,54 @@ class Parser {
 			name += "-" + this.expectIdent();
 		}
 		return name;
+	}
+
+	/**
+	 * `@({from("path"|"*")}, {where…}?, {map}?)`
+	 * Brace groups are raw expression lists (not pair/tuple sugar).
+	 */
+	private parseAtQuery(): AstNode {
+		this.expect({ type: "op", value: "@" });
+		this.expect({ type: "lparen" });
+		this.expect({ type: "lbrace" });
+		if (!this.matchIdent("from")) {
+			throw new Error('@ query requires {from("…")} as the first brace');
+		}
+		this.expect({ type: "lparen" });
+		const fromArg = this.parseExpression();
+		this.expect({ type: "rparen" });
+		this.expect({ type: "rbrace" });
+
+		let where: AstNode[] = [];
+		let map: AstNode | null = null;
+
+		if (this.match({ type: "comma" })) {
+			this.expect({ type: "lbrace" });
+			const items: AstNode[] = [];
+			if (!this.match({ type: "rbrace" })) {
+				do {
+					items.push(this.parseExpression());
+				} while (this.match({ type: "comma" }));
+				this.expect({ type: "rbrace" });
+			}
+			// Heuristic: if a third brace follows, second was where; else second is map
+			// when it looks like a single non-predicate expression… Carl’s arity is
+			// from [, where] [, map]. Distinguishing where vs map when only 2 braces:
+			// where items are typically bool calls / !this.file; map is a render expr.
+			// Spec: 2nd optional = where, 3rd optional = map. So 2 braces ⇒ where only
+			// unless we also allow `@({from}, {map})` without where — plan says
+			// (',' brace_where)? (',' brace_map)? so 2nd is always where when present.
+			where = items;
+
+			if (this.match({ type: "comma" })) {
+				this.expect({ type: "lbrace" });
+				map = this.parseExpression();
+				this.expect({ type: "rbrace" });
+			}
+		}
+
+		this.expect({ type: "rparen" });
+		return { kind: "atQuery", fromArg, where, map };
 	}
 
 	parseQuery(): AstNode {

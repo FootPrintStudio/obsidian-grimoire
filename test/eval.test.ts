@@ -427,3 +427,128 @@ describe("cross-note wiki and link auto-pass", () => {
 		expect(evaluateExpression("profile.nested.x", ctx)).toBe(1);
 	});
 });
+
+describe("@ multi-note query", () => {
+	const alice = createTestContext({
+		fields: { title: "Alice Title", workStatus: "retired", emailAddress: "a@ex.com" },
+		file: {
+			name: "Alice",
+			path: "Employees/Management/Alice.md",
+			folder: "Employees/Management",
+			mtime: pqDate(1),
+			ctime: pqDate(1),
+			size: 1,
+			tags: [],
+		},
+	});
+	const bob = createTestContext({
+		fields: { title: "Bob Title", workStatus: "Fired", emailAddress: "" },
+		file: {
+			name: "Bob",
+			path: "Employees/Management/Bob.md",
+			folder: "Employees/Management",
+			mtime: pqDate(1),
+			ctime: pqDate(1),
+			size: 1,
+			tags: [],
+		},
+	});
+	const carol = createTestContext({
+		fields: { title: "Carol Title", workStatus: "active", emailAddress: "c@ex.com" },
+		file: {
+			name: "Carol",
+			path: "Employees/Staff/Carol.md",
+			folder: "Employees/Staff",
+			mtime: pqDate(1),
+			ctime: pqDate(1),
+			size: 1,
+			tags: [],
+		},
+	});
+	const roster = createTestContext({
+		fields: { title: "Roster", workStatus: "meta" },
+		file: {
+			name: "Roster",
+			path: "Employees/Management/Roster.md",
+			folder: "Employees/Management",
+			mtime: pqDate(1),
+			ctime: pqDate(1),
+			size: 1,
+			tags: [],
+		},
+	});
+	const allNotes = [alice, bob, carol, roster];
+
+	function sourceCtx() {
+		const deps = new Set<string>();
+		return createTestContext({
+			fields: roster.fields,
+			file: roster.file,
+			deps,
+			listNotes: (fromArg) => {
+				if (fromArg === "*") return allNotes;
+				const folder = fromArg.replace(/\/$/, "");
+				return allNotes.filter(
+					(n) => n.file.folder === folder || n.file.path.startsWith(`${folder}/`),
+				);
+			},
+		});
+	}
+
+	it("lists pages from a folder scope", () => {
+		const ctx = sourceCtx();
+		const listed = evaluateExpression('@({from("Employees/Management")})', ctx) as string[];
+		expect(listed).toEqual(["[[Alice]]", "[[Bob]]", "[[Roster]]"]);
+	});
+
+	it("filters with where brace and ! negates / !this.file", () => {
+		const ctx = sourceCtx();
+		expect(
+			evaluateExpression(
+				'@({from("Employees/Management")}, {!this.file, !contains(workStatus, "Fired")})',
+				ctx,
+			),
+		).toEqual(["[[Alice]]"]);
+	});
+
+	it("maps with this = source note", () => {
+		const ctx = sourceCtx();
+		expect(
+			evaluateExpression(
+				'@({from("Employees/Management")}, {!this.file, contains(workStatus, "retired")}, {this.file.name + " → " + title})',
+				ctx,
+			),
+		).toEqual(["Roster → Alice Title"]);
+	});
+
+	it("ANDs where predicates", () => {
+		const ctx = sourceCtx();
+		expect(
+			evaluateExpression(
+				'@({from("*")}, {contains(workStatus, "retired"), any(emailAddress)}, {title})',
+				ctx,
+			),
+		).toEqual(["Alice Title"]);
+	});
+
+	it("returns empty when over hard cap", () => {
+		const many = Array.from({ length: 251 }, (_, i) =>
+			createTestContext({
+				fields: { title: `N${i}` },
+				file: {
+					name: `N${i}`,
+					path: `Bulk/N${i}.md`,
+					folder: "Bulk",
+					mtime: pqDate(1),
+					ctime: pqDate(1),
+					size: 1,
+					tags: [],
+				},
+			}),
+		);
+		const ctx = createTestContext({
+			listNotes: () => many,
+		});
+		expect(evaluateExpression('@({from("Bulk")})', ctx)).toEqual([]);
+	});
+});

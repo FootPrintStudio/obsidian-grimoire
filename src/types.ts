@@ -98,7 +98,17 @@ export interface QueryContext {
 	deps?: Set<string>;
 	/** Test / alternate vault bridge — returns a context for a linkpath. */
 	resolveNote?: (linkpath: string) => QueryContext | null;
+	/** Test / alternate vault bridge — pages for `@({from(...)})`. */
+	listNotes?: (fromArg: string) => QueryContext[];
+	/**
+	 * Authoring (source) note while evaluating an `@` map/where body.
+	 * When set, bare `this` / `this.file` resolve to this context (Carl lock).
+	 */
+	sourceCtx?: QueryContext;
 }
+
+/** Hard cap for `@({from…})` page lists (Visage safety). Over-cap → empty list. */
+export const AT_QUERY_MAX_PAGES = 250;
 
 export type AstNode =
 	| { kind: "literal"; value: Value }
@@ -114,4 +124,11 @@ export type AstNode =
 	| { kind: "unary"; op: string; arg: AstNode }
 	| { kind: "binary"; op: string; left: AstNode; right: AstNode }
 	| { kind: "call"; callee: string; args: AstNode[] }
-	| { kind: "styled"; expr: AstNode; style: RenderStyle };
+	| { kind: "styled"; expr: AstNode; style: RenderStyle }
+	/** `@({from("…")}, {where…}?, {map}?)` multi-note query. */
+	| {
+			kind: "atQuery";
+			fromArg: AstNode;
+			where: AstNode[];
+			map: AstNode | null;
+	  };

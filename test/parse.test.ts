@@ -181,3 +181,32 @@ describe("bare wiki and multi-index", () => {
 		}
 	});
 });
+
+describe("@ query parse", () => {
+	it("parses from-only @ query", () => {
+		const ast = parseExpression('@({from("Characters")})');
+		expect(ast.kind).toBe("atQuery");
+		if (ast.kind === "atQuery") {
+			expect(ast.fromArg).toEqual({ kind: "literal", value: "Characters" });
+			expect(ast.where).toEqual([]);
+			expect(ast.map).toBeNull();
+		}
+	});
+
+	it("parses where negates and map with this", () => {
+		const ast = parseExpression(
+			'@({from("Characters")}, {!this.file, !contains(workStatus, "Fired")}, {this.file.name + " → " + title})',
+		);
+		expect(ast.kind).toBe("atQuery");
+		if (ast.kind === "atQuery") {
+			expect(ast.where).toHaveLength(2);
+			expect(ast.where[0]?.kind).toBe("unary");
+			if (ast.where[0]?.kind === "unary") expect(ast.where[0].op).toBe("!");
+			expect(ast.map?.kind).toBe("binary");
+		}
+	});
+
+	it("rejects @ without from brace", () => {
+		expect(() => parseExpression("@({title})")).toThrow(/from/);
+	});
+});

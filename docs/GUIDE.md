@@ -1,6 +1,6 @@
 # Grimoire — Language Guide
 
-Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.9.7.
+Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.9.8.
 
 Expressions live in inline code with the **`q=`** prefix (configurable under Settings):
 
@@ -150,9 +150,24 @@ List-of-links `.field` returns a **list** of values (null slots for misses). Ind
 `q= linksProperty.title[0,4,5]`
 ```
 
-Missing targets / fields → empty. With **Refresh on metadata change** enabled, open notes that read a target re-render when that target’s metadata changes.
+Missing targets / fields → empty. With **Refresh on metadata change** enabled, open notes that read a target (or `@` match) re-render when that target’s metadata changes.
 
-`@({from("…")}, {where…}, {map})` multi-note queries are **not** shipped yet (next slice).
+### Multi-note `@` queries
+
+```markdown
+`q= @({from("Employees/Management")})`
+`q= @({from("Employees/Management")}, {contains(workStatus, "retired"), any(emailAddress)})`
+`q= @({from("Employees/Management")}, {!this.file, !contains(workStatus, "Fired")})`
+`q= @({from("*")}, {exists(title)}, {this.file.name + " → " + title})`
+```
+
+| Brace | Role |
+|-------|------|
+| 1st `{from("path")}` | Required. Quoted folder path, or `from("*")` for vault-wide |
+| 2nd `{where…}` | Optional. Bool predicates ANDed; `!` negates; `!this.file` excludes the source note |
+| 3rd `{map}` | Optional. Per-page expression; bare idents = page fields; `this.…` = **source** note |
+
+Result is a **list** (join with `join` / index with `[0]`). Prefer folder-scoped `from("…")` inside Visage cards. Hard cap **250** pages — over-cap returns empty.
 
 ### Grouping
 
@@ -584,6 +599,6 @@ Token colors: prefix, keywords, strings, numbers, identifiers, function names, o
 - Syntax colors on **evaluated results** in Reading view
 - `$=` inline JavaScript
 - Block / table queries (`dv.pages()`, FLATTEN, …)
-- Multi-note `@({from("…")}, {where…}, {map})` (quoted `from`, `!` negates, map `this`) — planned after single-page wiki
+- Where-brace OR sugar (AND only)
 
 See **README** for build instructions and **Settings** for prefix, syntax highlighting, display styles, and debug options.
