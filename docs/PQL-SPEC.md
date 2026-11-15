@@ -1,4 +1,4 @@
-# Property Query Language (PQL) — Specification v0.4
+# Property Query Language (PQL) — Specification v0.5
 
 Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
@@ -54,7 +54,7 @@ A frontmatter field named `file` (without `.`) is still accessible as a bare ide
 | Category | Operators |
 |----------|-----------|
 | Arithmetic | `+` `-` `*` `/` `%` |
-| Comparison | `==` `!=` `<` `>` `<=` `>=` (inclusive range: `inRange(value, low, high)`) |
+| Comparison | `==` `!=` `<` `>` `<=` `>=` (inclusive range: ternary `inRange({v,lo,hi},{below,in,above})`; legacy boolean `inRange(v,lo,hi)`) |
 | Logical | `and`, `or`, `not`, `&&` |
 | Grouping | `( )` |
 | Member / index | `.property`, `[index]` |
@@ -101,7 +101,8 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | `age(date)` / `age(date, fmt)` | Years since `date` (default), or duration-token format of elapsed span |
 | `numberformat(n, pattern)` | Number formatting (`0`, `0.00`, `,`, `%`) |
 | `conv(n, from, to)` | Unit conversion (length / mass / temperature; `ftin` → feet+inches string) |
-| `inRange(n, low, high)` | Inclusive range check; returns boolean |
+| `inRange({n, low, high}, {below, in, above})` | **Primary.** Inclusive three-way branch: `n < low` → `below`; `low ≤ n ≤ high` → `in`; `n > high` → `above`. Non-numeric → empty. Brace groups are positional triples. |
+| `inRange(n, low, high)` | **Legacy.** Inclusive boolean (`true`/`false`); keep for `choice(...)` migration |
 | `date(string \| now \| today)` | Parse ISO date string, or current time / start of today |
 | `length(v)` | String/list length |
 | `coalesce(a, b, …)` | First truthy value |
@@ -118,11 +119,21 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 - Keys compared with type-aware equality
 - `{*, value}` or `{default, value}` or `{_, value}` — fallback when no key matches
 
+## Brace groups
+
+| Form | AST | Used by |
+|------|-----|---------|
+| `{key, value}` | pair | `select(...)` arms |
+| `{a, b, c}` (3+ exprs) | tuple | `inRange({value, low, high}, {below, in, above})` |
+
+Order is positional. There is no `{name: expr}` map syntax.
+
 ## Query grammar
 
 ```
 expression := orExpr [ "AS" style ]
 query := expression
+braceGroup := "{" expression ("," expression)+ "}"
 style := "card" | "cards" | "tag" | "tags" | "badge" | "pill" | "callout" | "progress" | "meter" | "stars" | "image" | "img" | "wiki" | "wikilink" | "button" | "buttons" | "cards-code" | "code" | "inline" | "list" | …
 ```
 

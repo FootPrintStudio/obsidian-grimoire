@@ -14,6 +14,11 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.3 features
+
+- **`inRange({value, low, high}, {below, inBand, above})`** — primary three-way inclusive range branch (below / in / above)
+- Legacy **`inRange(value, low, high)`** boolean kept for `choice(...)` migration
+
 ## v0.9.0 features
 
 - **Epochs** integration: fantasy calendar dates in `date` / `dateformat`, calendar-aware `date ± dur`, frontmatter `{ calendar, year, month, day }`
@@ -102,7 +107,7 @@ The settings UI includes **README** and **Guide** tabs with in-app documentation
 ## v0.8.0 features
 
 - **`conv(value, from, to)`** — length / mass / temperature conversion (`ftin` → feet+inches string)
-- **`inRange(value, low, high)`** — inclusive boolean range check for `choice` and comparisons
+- **`inRange`** — see **v0.9.3** for the ternary form; boolean form remains for migration
 
 ## v0.7.2 features
 

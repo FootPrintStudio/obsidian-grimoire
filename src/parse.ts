@@ -272,11 +272,21 @@ class Parser {
 			return { kind: "literal", value: "*" };
 		}
 		if (this.match({ type: "lbrace" })) {
-			const key = this.parseExpression();
-			this.expect({ type: "comma" });
-			const value = this.parseExpression();
+			const elements: AstNode[] = [];
+			do {
+				elements.push(this.parseExpression());
+			} while (this.match({ type: "comma" }));
 			this.expect({ type: "rbrace" });
-			return { kind: "pair", key, value };
+			if (elements.length === 0) {
+				throw new Error("Empty brace group {} is not allowed");
+			}
+			if (elements.length === 1) {
+				throw new Error("Brace group needs at least two expressions, e.g. {key, value}");
+			}
+			if (elements.length === 2) {
+				return { kind: "pair", key: elements[0]!, value: elements[1]! };
+			}
+			return { kind: "tuple", elements };
 		}
 		if (this.match({ type: "lparen" })) {
 			const expr = this.parseExpression();
