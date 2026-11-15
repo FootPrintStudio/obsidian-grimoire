@@ -35,8 +35,9 @@ Not in the Obsidian Community Plugins catalog.
 Install via [BRAT](https://github.com/TfTHacker/obsidian42-brat):
 
 1. Enable **BRAT** in Community Plugins.
-2. **Add Beta plugin** → `FootPrintStudio/obsidian-grimoire`
+2. **Add Beta plugin** → `FootPrintStudio/obsidian-grimoire` (uses **GitHub Releases**).
 3. Enable **Grimoire** and reload Obsidian.
+4. Confirm Community plugins shows **0.9.2+** (Case 2b needs this; **0.9.0** shows `0` / `180 days` on fantasy `durationformat`).
 
 BRAT installs from [GitHub Releases](https://github.com/FootPrintStudio/obsidian-grimoire/releases). Each release attaches `main.js`, `manifest.json`, `styles.css`, and `versions.json`.
 
