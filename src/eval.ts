@@ -32,7 +32,8 @@ import {
 	toPqDuration,
 } from "./dates";
 import { fnConv, fnInRange, fnInRangeTernary } from "./units";
-import { getMemberValue, getFileField, resolveIdent } from "./context";
+import { getFileField, resolveIdent } from "./context";
+import { readCrossMember, resolveNoteContext } from "./crossNote";
 import { parseExpression, parseQuery } from "./parse";
 import type { AstNode, FileMeta, QueryContext, Value } from "./types";
 
@@ -279,6 +280,11 @@ function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 		if (node.name === "file") return ctx.file as unknown as Value;
 		return resolveIdent(node.name, ctx);
 	}
+	if (node.kind === "wiki") {
+		const noteCtx = resolveNoteContext(ctx, node.path);
+		if (!noteCtx) return null;
+		return `[[${node.path}]]`;
+	}
 	if (node.kind === "member") {
 		if (node.object.kind === "ident" && node.object.name === "this" && node.property === "file") {
 			return ctx.file as unknown as Value;
@@ -294,8 +300,15 @@ function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 		) {
 			return getFileField(ctx.file, node.property);
 		}
+		// Bare wiki page member: [[Note]].field / [[Note]].file.mtime
+		if (node.object.kind === "wiki") {
+			const noteCtx = resolveNoteContext(ctx, node.object.path);
+			if (!noteCtx) return null;
+			if (node.property === "file") return noteCtx.file as unknown as Value;
+			return resolveIdent(node.property, noteCtx);
+		}
 		const base = evalNode(node.object, ctx);
-		return getMemberValue(base, node.property);
+		return readCrossMember(base, node.property, ctx);
 	}
 	return evalNode(node, ctx);
 }
@@ -385,17 +398,27 @@ function evalNode(node: AstNode, ctx: QueryContext): Value {
 			return node.elements.map((el) => evalNode(el, ctx));
 		case "ident":
 			return resolveIdent(node.name, ctx);
+		case "wiki": {
+			const noteCtx = resolveNoteContext(ctx, node.path);
+			if (!noteCtx) return null;
+			return `[[${node.path}]]`;
+		}
 		case "member":
 			return resolveMemberNode(node, ctx);
 		case "index": {
 			const base = evalNode(node.object, ctx);
 			const indexVal = evalNode(node.index, ctx);
 			const inner = unwrapForTruthiness(base);
-			if (Array.isArray(inner)) {
-				const idx = Number(unwrapForTruthiness(indexVal));
+			if (!Array.isArray(inner)) return null;
+			const pick = (raw: Value): Value => {
+				const idx = Number(unwrapForTruthiness(raw));
 				return !Number.isNaN(idx) ? (inner[idx] ?? null) : null;
+			};
+			// Multi-index `[0,4,5]` — tuple eval yields a list of index values.
+			if (Array.isArray(indexVal)) {
+				return indexVal.map((v) => pick(v));
 			}
-			return null;
+			return pick(indexVal);
 		}
 		case "styled":
 			return pqStyled(evalNode(node.expr, ctx), node.style);
@@ -519,5 +542,9 @@ export function createTestContext(
 	return {
 		fields: overrides.fields ?? {},
 		file,
+		sourcePath: overrides.sourcePath ?? file.path,
+		app: overrides.app,
+		deps: overrides.deps,
+		resolveNote: overrides.resolveNote,
 	};
 }

@@ -148,3 +148,36 @@ describe("parseRenderStyleName", () => {
 		expect(parseRenderStyleName("codecard")).toBe("cards-code");
 	});
 });
+
+describe("bare wiki and multi-index", () => {
+	it("parses [[Note]] as a wiki primary", () => {
+		const ast = parseExpression("[[Alice]]");
+		expect(ast).toEqual({ kind: "wiki", path: "Alice" });
+	});
+
+	it("parses [[folder/Note]].field member chains", () => {
+		const ast = parseExpression("[[Characters/Alice]].title");
+		expect(ast.kind).toBe("member");
+		if (ast.kind === "member") {
+			expect(ast.property).toBe("title");
+			expect(ast.object).toEqual({ kind: "wiki", path: "Characters/Alice" });
+		}
+	});
+
+	it("strips wiki display alias before the pipe", () => {
+		const ast = parseExpression("[[Alice|Ally]].title");
+		expect(ast.kind).toBe("member");
+		if (ast.kind === "member" && ast.object.kind === "wiki") {
+			expect(ast.object.path).toBe("Alice");
+		}
+	});
+
+	it("parses multi-index [0,4,5] as an index over a tuple", () => {
+		const ast = parseExpression("items[0, 4, 5]");
+		expect(ast.kind).toBe("index");
+		if (ast.kind === "index") {
+			expect(ast.index.kind).toBe("tuple");
+			if (ast.index.kind === "tuple") expect(ast.index.elements).toHaveLength(3);
+		}
+	});
+});

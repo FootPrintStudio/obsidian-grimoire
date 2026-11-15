@@ -325,3 +325,105 @@ describe("evaluateExpressionSafe styles", () => {
 		}
 	});
 });
+
+describe("cross-note wiki and link auto-pass", () => {
+	const alice = createTestContext({
+		fields: { title: "Alice Title", birthDate: "2000-01-01", status: "active" },
+		file: {
+			name: "Alice",
+			path: "Characters/Alice.md",
+			folder: "Characters",
+			mtime: pqDate(1_700_000_000_000),
+			ctime: pqDate(1_600_000_000_000),
+			size: 42,
+			tags: ["ally"],
+		},
+	});
+	const bob = createTestContext({
+		fields: { title: "Bob Title" },
+		file: {
+			name: "Bob",
+			path: "Characters/Bob.md",
+			folder: "Characters",
+			mtime: pqDate(1_700_000_000_000),
+			ctime: pqDate(1_600_000_000_000),
+			size: 10,
+			tags: [],
+		},
+	});
+
+	function vaultCtx(fields: Record<string, unknown> = {}) {
+		const deps = new Set<string>();
+		return createTestContext({
+			fields: fields as Record<string, import("../src/types").Value>,
+			deps,
+			resolveNote: (linkpath) => {
+				const key = linkpath.replace(/\.md$/i, "");
+				if (key === "Alice" || key === "Characters/Alice") return alice;
+				if (key === "Bob" || key === "Characters/Bob") return bob;
+				return null;
+			},
+		});
+	}
+
+	it("evaluates bare [[Alice]] to a wiki string when the note resolves", () => {
+		expect(evaluateExpression("[[Alice]]", vaultCtx())).toBe("[[Alice]]");
+	});
+
+	it("reads [[Alice]].title and nested file.mtime", () => {
+		const ctx = vaultCtx();
+		expect(evaluateExpression("[[Alice]].title", ctx)).toBe("Alice Title");
+		expect(evaluateExpression("[[Alice]].file.name", ctx)).toBe("Alice");
+		const mtime = evaluateExpression("[[Alice]].file.mtime", ctx);
+		expect(mtime).toEqual(alice.file.mtime);
+	});
+
+	it("returns null for missing notes and missing fields", () => {
+		const ctx = vaultCtx();
+		expect(evaluateExpression("[[Missing]].title", ctx)).toBeNull();
+		expect(evaluateExpression("[[Alice]].nope", ctx)).toBeNull();
+		expect(evaluateExpression('default([[Missing]].title, "unknown")', ctx)).toBe("unknown");
+	});
+
+	it("auto-passes link-valued parent.title", () => {
+		const ctx = vaultCtx({ parent: "[[Alice]]" });
+		expect(evaluateExpression("parent.title", ctx)).toBe("Alice Title");
+		expect(evaluateExpression("parent.status", ctx)).toBe("active");
+	});
+
+	it("maps list-of-links .field to a list and supports multi-index", () => {
+		const ctx = vaultCtx({
+			linksProperty: ["[[Alice]]", "[[Bob]]", "[[Missing]]", "[[Alice]]", "[[Bob]]", "[[Alice]]"],
+		});
+		expect(evaluateExpression("linksProperty.title", ctx)).toEqual([
+			"Alice Title",
+			"Bob Title",
+			null,
+			"Alice Title",
+			"Bob Title",
+			"Alice Title",
+		]);
+		expect(evaluateExpression("linksProperty.title[0]", ctx)).toBe("Alice Title");
+		expect(evaluateExpression("linksProperty.title[0,4,5]", ctx)).toEqual([
+			"Alice Title",
+			"Bob Title",
+			"Alice Title",
+		]);
+	});
+
+	it("records dependency paths during resolve", () => {
+		const ctx = vaultCtx({ parent: "[[Alice]]" });
+		evaluateExpression("parent.title", ctx);
+		evaluateExpression("[[Bob]].title", ctx);
+		expect(ctx.deps?.has("Characters/Alice.md")).toBe(true);
+		expect(ctx.deps?.has("Characters/Bob.md")).toBe(true);
+	});
+
+	it("leaves nested object fields without links unchanged", () => {
+		const ctx = vaultCtx({
+			profile: { title: "Local", nested: { x: 1 } },
+		});
+		expect(evaluateExpression("profile.title", ctx)).toBe("Local");
+		expect(evaluateExpression("profile.nested.x", ctx)).toBe(1);
+	});
+});

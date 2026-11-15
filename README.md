@@ -14,6 +14,12 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.7 features
+
+- **Cross-note (single-page):** bare `[[Note]].field`, link-valued auto-pass (`parent.title`), list-of-links → list + `[0]` / `[0,4,5]`
+- Refresh dependency registry when **Refresh on metadata change** is on
+- PQL-SPEC **v0.8** — `@({from…})` deferred to a later slice
+
 ## v0.9.6 features
 
 - **`inRange`** resolves Epochs fantasy date **strings / frontmatter objects** the same way as `date()` (not only pre-branded `PqDate`)

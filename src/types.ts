@@ -90,11 +90,21 @@ export interface FileMeta {
 export interface QueryContext {
 	fields: Record<string, Value>;
 	file: FileMeta;
+	/** Obsidian app for cross-note resolve (Reading view). */
+	app?: import("obsidian").App;
+	/** Source note path for linkpath resolution. */
+	sourcePath?: string;
+	/** Target paths touched during eval (refresh dependency registry). */
+	deps?: Set<string>;
+	/** Test / alternate vault bridge — returns a context for a linkpath. */
+	resolveNote?: (linkpath: string) => QueryContext | null;
 }
 
 export type AstNode =
 	| { kind: "literal"; value: Value }
 	| { kind: "ident"; name: string }
+	/** Bare wiki page handle `[[linkpath]]`. */
+	| { kind: "wiki"; path: string }
 	| { kind: "member"; object: AstNode; property: string }
 	| { kind: "index"; object: AstNode; index: AstNode }
 	/** Brace `{a, b}` — also `{a}` which parses as pair with false arm `""`. */

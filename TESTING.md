@@ -54,6 +54,11 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= inRange({age(birthDate), 18, 65}, {"young", "working", "senior"})` `` numeric age band
 - [ ] Mixed `` `q= inRange({height, date("2000-01-01"), 10}, {"a", "b", "c"})` `` → empty
 - [ ] Fantasy `` `q= inRange({date(fantasyBirth), date("aether:300-Greentide-1"), date("aether:320-Greentide-1")}, {"before", "in", "after"})` `` → **in** (needs Epochs + Aether)
+- [ ] `` `q= [[Other]].title` `` reads the other note’s title (create a linked note first)
+- [ ] `` `q= parent.title` `` when `parent: "[[Other]]"` resolves without a wrapper
+- [ ] List-of-links `` `q= links.title[0]` `` / `` `q= links.title[0,1]` ``
+- [ ] Missing `` `q= [[NoSuch]].title` `` → empty; `` `q= default([[NoSuch]].title, "x")` `` → **x**
+- [ ] With refresh toggle on, editing Other’s frontmatter refreshes an open note that referenced it
 
 ## Syntax highlighting checklist
 

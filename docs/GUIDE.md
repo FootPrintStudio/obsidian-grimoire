@@ -1,6 +1,6 @@
 # Grimoire — Language Guide
 
-Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.6.0.
+Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.9.7.
 
 Expressions live in inline code with the **`q=`** prefix (configurable under Settings):
 
@@ -121,6 +121,38 @@ If you have a frontmatter field literally named `file`, use it as a bare identif
 |--------|---------|
 | `property.field` | Property access |
 | `list[0]` | List index (numeric) |
+| `list[0,4,5]` | Multi-index → list of picked elements |
+
+### Cross-note (wiki + link auto-pass)
+
+Bare wiki links are **expression primaries** (not only string literals):
+
+```markdown
+`q= [[Alice]]`
+`q= [[Alice]].title`
+`q= dateformat([[Alice]].birthDate, "yyyy-MM-dd")`
+`q= default([[Alice]].status, "unknown")`
+`q= [[Alice]].file.mtime`
+```
+
+If a frontmatter field holds a page link, member access **resolves the link first**:
+
+```markdown
+`q= parent.title`
+`q= default(parent.title, "Unknown parent")`
+```
+
+List-of-links `.field` returns a **list** of values (null slots for misses). Index like any list:
+
+```markdown
+`q= linksProperty.title`
+`q= linksProperty.title[0]`
+`q= linksProperty.title[0,4,5]`
+```
+
+Missing targets / fields → empty. With **Refresh on metadata change** enabled, open notes that read a target re-render when that target’s metadata changes.
+
+`@({from("…")}, {where…}, {map})` multi-note queries are **not** shipped yet (next slice).
 
 ### Grouping
 
@@ -546,12 +578,12 @@ Token colors: prefix, keywords, strings, numbers, identifiers, function names, o
 
 ---
 
-## Not implemented (v0.3)
+## Not implemented
 
 - Live Preview inline **evaluation widget** (results in preview DOM only; editor shows highlighted source)
 - Syntax colors on **evaluated results** in Reading view
 - `$=` inline JavaScript
 - Block / table queries (`dv.pages()`, FLATTEN, …)
-- Cross-note `[[Other Note]].field` lookups
+- Multi-note `@({from("…")}, {where…}, {map})` (quoted `from`, `!` negates, map `this`) — planned after single-page wiki
 
 See **README** for build instructions and **Settings** for prefix, syntax highlighting, display styles, and debug options.

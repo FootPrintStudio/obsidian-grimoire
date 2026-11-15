@@ -1,4 +1,4 @@
-# Property Query Language (PQL) — Specification v0.7
+# Property Query Language (PQL) — Specification v0.8
 
 Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
@@ -8,7 +8,17 @@ Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the
 
 ## Scope
 
-PQL is always scoped to the **current note** being rendered. It does not query other pages (cross-note lookup is a future extension).
+PQL is scoped to the **current note** by default. **Cross-note** reads are opt-in via bare wiki primaries and link-valued member access:
+
+| Form | Meaning |
+|------|---------|
+| `[[Other Note]]` | Page handle (resolves via `metadataCache.getFirstLinkpathDest`) |
+| `[[Other Note]].field` | Frontmatter / nested field on that note |
+| `[[Other Note]].file.mtime` | Reserved `file.*` on that note |
+| `linkField.member` | When `linkField` holds a wiki/path link, resolve then read `member` |
+| List-of-links `.field` | Map → list of values; index with `[0]` or `[0,4,5]` |
+
+Missing note / field → `null` (empty output). Multi-note `@({from…}, …)` queries are **not** in v0.8 (planned).
 
 ## Context model
 
@@ -57,7 +67,8 @@ A frontmatter field named `file` (without `.`) is still accessible as a bare ide
 | Comparison | `==` `!=` `<` `>` `<=` `>=` (inclusive range: ternary `inRange({v,lo,hi},{below,in,above})`; legacy boolean `inRange(v,lo,hi)`; numbers / dates / durations) |
 | Logical | `and`, `or`, `not`, `&&` |
 | Grouping | `( )` |
-| Member / index | `.property`, `[index]` |
+| Member / index | `.property`, `[index]`, multi `[i,j,…]` |
+| Wiki primary | bare `[[linkpath]]` |
 
 ### String concatenation
 
