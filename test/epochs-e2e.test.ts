@@ -235,6 +235,47 @@ describe("P3 case 2 — calendar with months", () => {
 				ctx,
 			),
 		).toBe("2 years");
+
+		expect(
+			evaluateExpression(
+				'durationformat(date("aether:314-Greentide-4") - birthDate, "y\' years\'")',
+				ctx,
+			),
+		).toBe("2 years");
+		// Smoke Case 2b — bare y must be fantasy years (2), not Gregorian component (0)
+		expect(
+			evaluateExpression(
+				'durationformat(date("aether:314-Greentide-4") - date(birthDate), "y")',
+				ctx,
+			),
+		).toBe("2");
+		expect(
+			evaluateExpression(
+				'durationformat(date("aether:314-Greentide-4") - date(birthDate))',
+				ctx,
+			),
+		).toContain("2 year");
+	});
+
+	it("Case 2b: plain frontmatter object still tags calendarId on date−date", () => {
+		setEpochsApiForTests(makeMockEpochs());
+		const ctx = createTestContext({
+			fields: {
+				// Not pre-coerced — arithmetic must call fnDate / Epochs parse
+				birthDate: {
+					calendar: "aether",
+					year: 312,
+					month: "Greentide",
+					day: 4,
+				},
+			},
+		});
+		expect(
+			evaluateExpression(
+				'durationformat(date("aether:314-Greentide-4") - birthDate, "y")',
+				ctx,
+			),
+		).toBe("2");
 	});
 });
 

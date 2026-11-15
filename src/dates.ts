@@ -355,11 +355,19 @@ export function subtractDateDuration(date: PqDate, dur: PqDuration): PqDate {
 	);
 }
 
+/** Calendar id for a date−date span: same id on both, or the sole fantasy side. */
+function sharedDateCalendarId(a: PqDate, b: PqDate): string | undefined {
+	const ca = a.calendarId?.trim();
+	const cb = b.calendarId?.trim();
+	if (ca && cb) {
+		return ca.toLowerCase() === cb.toLowerCase() ? ca : undefined;
+	}
+	return ca || cb || undefined;
+}
+
 export function subtractDates(a: PqDate, b: PqDate): PqDuration {
-	const ms = moment(a.ms).diff(moment(b.ms));
-	const calendarId =
-		a.calendarId && a.calendarId === b.calendarId ? a.calendarId : undefined;
-	return pqDuration(ms, undefined, calendarId);
+	const ms = a.ms - b.ms;
+	return pqDuration(ms, undefined, sharedDateCalendarId(a, b));
 }
 
 function sharedDurationCalendarId(a: PqDuration, b: PqDuration): string | undefined {

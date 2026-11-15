@@ -175,13 +175,17 @@ function hasStyledOrFragments(value: Value): boolean {
 	return isPqStyled(value) || isPqFragments(value);
 }
 
+/** Prefer branded dates; otherwise fantasy coerce via Epochs (`date()` / frontmatter objects). */
+function asPqDate(value: Value): ReturnType<typeof toPqDate> {
+	return toPqDate(value) ?? fnDate(value);
+}
+
 function addValues(a: Value, b: Value): Value {
 	if (hasStyledOrFragments(a) || hasStyledOrFragments(b)) {
 		return pqFragments([...flattenFragmentParts(a), ...flattenFragmentParts(b)]);
 	}
 
-	const da = toPqDate(a);
-	const db = toPqDate(b);
+	const da = asPqDate(a);
 	const dura = toPqDuration(a);
 	const durb = toPqDuration(b);
 
@@ -197,8 +201,8 @@ function addValues(a: Value, b: Value): Value {
 function subtractValues(a: Value, b: Value): Value {
 	const ua = unwrapForTruthiness(a);
 	const ub = unwrapForTruthiness(b);
-	const da = toPqDate(ua);
-	const db = toPqDate(ub);
+	const da = asPqDate(ua);
+	const db = asPqDate(ub);
 	const dura = toPqDuration(ua);
 	const durb = toPqDuration(ub);
 
