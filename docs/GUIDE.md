@@ -342,7 +342,7 @@ With the **Epochs** plugin enabled, also accepts fantasy calendar dates:
 
 Both quoted and unquoted forms work: `date("today")` and `date(today)`.
 
-Fantasy dates keep a calendar id. `date + dur(n, "years")` (and months / weeks / days) use that calendar’s lengths when Epochs is loaded. If Epochs is disabled, fantasy dates format as empty; Gregorian behaviour is unchanged. See the Epochs Guide for calendar notes under **Epoch Calendars/**.
+Fantasy dates keep a calendar id. `date + dur(n, "years")` (and months / weeks / days) use that calendar’s lengths when Epochs is loaded. Subtracting two fantasy dates on the **same** calendar tags the resulting duration with that calendar id, so `durationformat` uses Epochs year/day lengths (human or `y`/`d` tokens). If Epochs is disabled, fantasy dates and fantasy-tagged durations format as empty; Gregorian behaviour is unchanged. See the Epochs Guide for calendar notes under **Epoch Calendars/**.
 
 ### `length(value)`
 

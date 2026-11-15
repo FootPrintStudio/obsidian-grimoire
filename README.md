@@ -14,6 +14,10 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.1 features
+
+- **Epochs** `durationformat`: fantasy `date − date` (same calendar) tags the duration so human/`y`/`d` tokens use Epochs year/day lengths
+
 ## v0.9.0 features
 
 - **Epochs** integration: fantasy calendar dates in `date` / `dateformat`, calendar-aware `date ± dur`, frontmatter `{ calendar, year, month, day }`

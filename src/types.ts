@@ -47,6 +47,11 @@ export interface PqDuration {
 	readonly ms: number;
 	/** When present, date +/- uses calendar units (years, months, …) not fixed ms. */
 	readonly calendar?: ReadonlyArray<{ readonly amount: number; readonly unit: string }>;
+	/**
+	 * When set (typically from fantasy `date - date`), human/`durationformat`
+	 * may use Epochs `formatDuration` for that calendar’s year/day lengths.
+	 */
+	readonly calendarId?: string;
 }
 
 /** Value wrapped with an `AS <style>` postfix. */
