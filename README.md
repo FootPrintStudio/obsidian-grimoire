@@ -14,6 +14,14 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.2 features
+
+- Case 2b fix: `date − date` / plain frontmatter objects keep fantasy `calendarId` so `durationformat(..., "y")` is **2** fantasy years (not Gregorian **0**)
+
+## v0.9.1 features
+
+- **Epochs** `durationformat`: fantasy `date − date` (same calendar) tags the duration so human/`y`/`d` tokens use Epochs year/day lengths
+
 ## v0.9.0 features
 
 - **Epochs** integration: fantasy calendar dates in `date` / `dateformat`, calendar-aware `date ± dur`, frontmatter `{ calendar, year, month, day }`
@@ -27,8 +35,9 @@ Not in the Obsidian Community Plugins catalog.
 Install via [BRAT](https://github.com/TfTHacker/obsidian42-brat):
 
 1. Enable **BRAT** in Community Plugins.
-2. **Add Beta plugin** → `FootPrintStudio/obsidian-grimoire`
+2. **Add Beta plugin** → `FootPrintStudio/obsidian-grimoire` (uses **GitHub Releases**).
 3. Enable **Grimoire** and reload Obsidian.
+4. Confirm Community plugins shows **0.9.2+** (Case 2b needs this; **0.9.0** shows `0` / `180 days` on fantasy `durationformat`).
 
 BRAT installs from [GitHub Releases](https://github.com/FootPrintStudio/obsidian-grimoire/releases). Each release attaches `main.js`, `manifest.json`, `styles.css`, and `versions.json`.
 

@@ -15,12 +15,20 @@ export interface EpochsDateApi {
 }
 
 let appRef: App | null = null;
+/** Test-only override; production always resolves via `plugins.epochs.api`. */
+let testApiOverride: EpochsDateApi | null | undefined;
 
-export function setGrimoireApp(app: App): void {
+export function setGrimoireApp(app: App | null): void {
 	appRef = app;
 }
 
+/** Inject or clear a duck-typed Epochs API for unit/E2E tests. Pass `undefined` to clear. */
+export function setEpochsApiForTests(api: EpochsDateApi | null | undefined): void {
+	testApiOverride = api;
+}
+
 export function getEpochsApi(): EpochsDateApi | null {
+	if (testApiOverride !== undefined) return testApiOverride;
 	if (!appRef) return null;
 	const plugins = (
 		appRef as App & {
@@ -29,7 +37,13 @@ export function getEpochsApi(): EpochsDateApi | null {
 	).plugins?.plugins;
 	const epochs = plugins?.epochs;
 	const api = epochs?.api;
-	if (!api || typeof api.parseDate !== "function" || typeof api.formatDate !== "function") {
+	if (
+		!api ||
+		typeof api.parseDate !== "function" ||
+		typeof api.formatDate !== "function" ||
+		typeof api.formatDuration !== "function" ||
+		typeof api.addDuration !== "function"
+	) {
 		return null;
 	}
 	return api;

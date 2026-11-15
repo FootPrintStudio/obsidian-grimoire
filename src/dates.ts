@@ -18,8 +18,13 @@ export function pqDate(ms: number, calendarId?: string): PqDate {
 export function pqDuration(
 	ms: number,
 	calendar?: ReadonlyArray<{ amount: number; unit: string }>,
+	calendarId?: string,
 ): PqDuration {
+	if (calendar?.length && calendarId) {
+		return { __pqDuration: true, ms, calendar, calendarId };
+	}
 	if (calendar?.length) return { __pqDuration: true, ms, calendar };
+	if (calendarId) return { __pqDuration: true, ms, calendarId };
 	return { __pqDuration: true, ms };
 }
 
@@ -268,8 +273,16 @@ function durationformatHuman(ms: number): string {
 
 export function durationformat(value: Value, format?: string): string {
 	if (!isPqDuration(value)) return "";
-	// Fantasy duration display when calendar parts carry a calendar hint via last date — not available here.
-	// Callers with calendar context use Epochs directly; keep Gregorian human/token path.
+	if (value.calendarId) {
+		const api = getEpochsApi();
+		if (api) {
+			const out = api.formatDuration(value.ms, value.calendarId, format);
+			if (out) return out;
+		}
+		// Missing Epochs or unknown calendar → empty for fantasy-tagged durations
+		// (same degrade rule as fantasy dateformat).
+		return "";
+	}
 	if (format) return formatDurationWithTokens(value.ms, format);
 	return durationformatHuman(value.ms);
 }
@@ -342,21 +355,47 @@ export function subtractDateDuration(date: PqDate, dur: PqDuration): PqDate {
 	);
 }
 
+/** Calendar id for a date−date span: same id on both, or the sole fantasy side. */
+function sharedDateCalendarId(a: PqDate, b: PqDate): string | undefined {
+	const ca = a.calendarId?.trim();
+	const cb = b.calendarId?.trim();
+	if (ca && cb) {
+		return ca.toLowerCase() === cb.toLowerCase() ? ca : undefined;
+	}
+	return ca || cb || undefined;
+}
+
 export function subtractDates(a: PqDate, b: PqDate): PqDuration {
-	return pqDuration(moment(a.ms).diff(moment(b.ms)));
+	const ms = a.ms - b.ms;
+	return pqDuration(ms, undefined, sharedDateCalendarId(a, b));
+}
+
+function sharedDurationCalendarId(a: PqDuration, b: PqDuration): string | undefined {
+	if (a.calendarId && b.calendarId) {
+		return a.calendarId === b.calendarId ? a.calendarId : undefined;
+	}
+	return a.calendarId ?? b.calendarId;
 }
 
 export function addDurations(a: PqDuration, b: PqDuration): PqDuration {
 	const calendar = [...(a.calendar ?? []), ...(b.calendar ?? [])];
-	return pqDuration(a.ms + b.ms, calendar.length ? calendar : undefined);
+	return pqDuration(
+		a.ms + b.ms,
+		calendar.length ? calendar : undefined,
+		sharedDurationCalendarId(a, b),
+	);
 }
 
 export function subtractDurations(a: PqDuration, b: PqDuration): PqDuration {
-	return pqDuration(a.ms - b.ms);
+	const calendarId =
+		a.calendarId && (!b.calendarId || a.calendarId === b.calendarId)
+			? a.calendarId
+			: undefined;
+	return pqDuration(a.ms - b.ms, undefined, calendarId);
 }
 
 export function scaleDuration(dur: PqDuration, factor: number): PqDuration {
-	return pqDuration(dur.ms * factor);
+	return pqDuration(dur.ms * factor, dur.calendar, dur.calendarId);
 }
 
 export function compareValues(a: Value, b: Value): number {
