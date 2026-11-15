@@ -41,7 +41,8 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= dateformat(date("2003-10-03"), "MMMM ddO, yyyy")` `` → **October 3rd, 2003**
 - [ ] `` `q= numberformat(0.256, "0.0%")` `` → **25.6%**
 - [ ] `` `q= conv(180, cm, ftin)` `` → **5' 11"**
-- [ ] `` `q= choice(inRange(height, 150, 190), "OK", "Out")` `` branches on inclusive range
+- [ ] `` `q= inRange({height, 150, 190}, {"short", "OK", "tall"})` `` three-way inclusive range
+- [ ] `` `q= choice(inRange(height, 150, 190), "OK", "Out")` `` legacy boolean still works
 
 ## Syntax highlighting checklist
 

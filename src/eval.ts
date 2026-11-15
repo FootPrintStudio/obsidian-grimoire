@@ -31,7 +31,7 @@ import {
 	toPqDate,
 	toPqDuration,
 } from "./dates";
-import { fnConv, fnInRange } from "./units";
+import { fnConv, fnInRange, fnInRangeTernary } from "./units";
 import { getMemberValue, getFileField, resolveIdent } from "./context";
 import { parseExpression, parseQuery } from "./parse";
 import type { AstNode, FileMeta, QueryContext, Value } from "./types";
@@ -145,6 +145,39 @@ function evalSelect(args: AstNode[], ctx: QueryContext): Value {
 	return fallback;
 }
 
+/**
+ * Primary: `inRange({value, low, high}, {below, inBand, above})` → three-way branch.
+ * Legacy: `inRange(value, low, high)` → inclusive boolean (for `choice`).
+ */
+function evalInRange(args: AstNode[], ctx: QueryContext): Value {
+	if (
+		args.length === 2 &&
+		args[0]!.kind === "tuple" &&
+		args[1]!.kind === "tuple" &&
+		args[0]!.elements.length === 3 &&
+		args[1]!.elements.length === 3
+	) {
+		const [valueNode, lowNode, highNode] = args[0]!.elements;
+		const [belowNode, inNode, aboveNode] = args[1]!.elements;
+		return fnInRangeTernary(
+			evalNode(valueNode!, ctx),
+			evalNode(lowNode!, ctx),
+			evalNode(highNode!, ctx),
+			evalNode(belowNode!, ctx),
+			evalNode(inNode!, ctx),
+			evalNode(aboveNode!, ctx),
+		);
+	}
+
+	if (args.length === 3) {
+		return fnInRange(evalNode(args[0]!, ctx), evalNode(args[1]!, ctx), evalNode(args[2]!, ctx));
+	}
+
+	throw new Error(
+		'inRange() expects inRange({value, low, high}, {below, inRange, above}) or legacy inRange(value, low, high)',
+	);
+}
+
 function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 	if (node.kind === "ident") {
 		if (node.name === "file") return ctx.file as unknown as Value;
@@ -252,6 +285,8 @@ function evalNode(node: AstNode, ctx: QueryContext): Value {
 			return node.value;
 		case "pair":
 			return evalNode(node.value, ctx);
+		case "tuple":
+			return node.elements.map((el) => evalNode(el, ctx));
 		case "ident":
 			return resolveIdent(node.name, ctx);
 		case "member":
@@ -308,6 +343,7 @@ function evalNode(node: AstNode, ctx: QueryContext): Value {
 		case "call": {
 			const name = node.callee.toLowerCase();
 			if (name === "select") return evalSelect(node.args, ctx);
+			if (name === "inrange") return evalInRange(node.args, ctx);
 			const args = node.args.map((arg) => evalNode(arg, ctx));
 			const fn = FUNCTION_MAP[name];
 			if (!fn) throw new Error(`Unknown function "${node.callee}"`);
@@ -339,7 +375,6 @@ const FUNCTION_MAP: Record<string, Fn> = {
 		};
 		return fnConv(args[0] ?? null, unitArg(args[1] ?? null, rawArgs?.[1]), unitArg(args[2] ?? null, rawArgs?.[2]));
 	},
-	inrange: ([v, lo, hi]) => fnInRange(v, lo, hi),
 	length: ([v]) => fnLength(v),
 	coalesce: (args) => fnCoalesce(...args),
 	join: ([list, sep]) => fnJoin(list, sep),

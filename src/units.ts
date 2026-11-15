@@ -223,10 +223,46 @@ export function fnConv(value: Value, fromRaw: string, toRaw: string): Value {
 	}
 }
 
+/** Inclusive boolean range check: `low <= value <= high`. */
 export function fnInRange(value: Value, low: Value, high: Value): boolean {
 	const n = toNumber(value);
 	const lo = toNumber(low);
 	const hi = toNumber(high);
 	if (n === null || lo === null || hi === null) return false;
 	return lo <= n && n <= hi;
+}
+
+export type InRangeBand = "below" | "in" | "above";
+
+/**
+ * Classify `value` relative to inclusive `[low, high]`.
+ * Returns `null` when any operand is non-numeric.
+ */
+export function classifyInRange(value: Value, low: Value, high: Value): InRangeBand | null {
+	const n = toNumber(value);
+	const lo = toNumber(low);
+	const hi = toNumber(high);
+	if (n === null || lo === null || hi === null) return null;
+	if (n < lo) return "below";
+	if (n > hi) return "above";
+	return "in";
+}
+
+/**
+ * Three-way range branch: pick `below` / `inBand` / `above` by inclusive bounds.
+ * Non-numeric operands → `null`.
+ */
+export function fnInRangeTernary(
+	value: Value,
+	low: Value,
+	high: Value,
+	below: Value,
+	inBand: Value,
+	above: Value,
+): Value {
+	const band = classifyInRange(value, low, high);
+	if (band === null) return null;
+	if (band === "below") return below;
+	if (band === "above") return above;
+	return inBand;
 }

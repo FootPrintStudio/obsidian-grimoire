@@ -98,6 +98,8 @@ export type AstNode =
 	| { kind: "member"; object: AstNode; property: string }
 	| { kind: "index"; object: AstNode; index: AstNode }
 	| { kind: "pair"; key: AstNode; value: AstNode }
+	/** Brace group with 3+ comma-separated expressions, e.g. `{v, lo, hi}`. */
+	| { kind: "tuple"; elements: AstNode[] }
 	| { kind: "unary"; op: string; arg: AstNode }
 	| { kind: "binary"; op: string; left: AstNode; right: AstNode }
 	| { kind: "call"; callee: string; args: AstNode[] }

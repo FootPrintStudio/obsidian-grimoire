@@ -271,14 +271,33 @@ Cross-category conversion throws an error. Invalid or non-numeric values return 
 
 Unit names are case-insensitive (`cm`, `CM`, `centimeters`).
 
-### `inRange(value, low, high)`
+### `inRange({value, low, high}, {below, inBand, above})`
 
-Returns **`true`** when `low <= value <= high` (inclusive bounds), else **`false`**. Use with `choice` for branching. Non-numeric operands → `false`.
+**Primary form (three-way).** Inclusive bounds (`low <= value <= high`). Picks one of three results:
+
+| Condition | Result |
+|-----------|--------|
+| `value < low` | first branch (`below`) |
+| `low <= value <= high` | second branch (`inBand`) |
+| `value > high` | third branch (`above`) |
+
+Non-numeric operands → empty.
+
+```markdown
+`q= inRange({height, 150, 190}, {"too short", "OK", "too tall"})`
+`q= inRange({numA, 1, 10}, {"low", "in band", "high"})`
+`q= inRange({height, minHeight, maxHeight}, {"↓", "✓", "↑"})`
+```
+
+#### Legacy boolean form
+
+`inRange(value, low, high)` still returns **`true`/`false`** for use with `choice`. Prefer the ternary form for new notes.
 
 ```markdown
 `q= choice(inRange(height, 150, 190), "OK", "Out of range")`
-`q= choice(inRange(numA, 1, 10), "in band", "out of band")`
 ```
+
+**Migration:** replace `choice(inRange(v, lo, hi), in, out)` with `inRange({v, lo, hi}, {outBelow, in, outAbove})` when you need separate below/above labels (or use the same string for both out-of-range branches).
 
 ### `dur(amount, unit)` / `dur("text")`
 
