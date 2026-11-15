@@ -62,6 +62,7 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= @({from("Characters")})` `` lists wiki handles under that folder
 - [ ] `` `q= @({from("Characters")}, {!this.file, exists(title)}, {title})` `` filters + maps with `this`
 - [ ] `` `q= @({from("*")}, {exists(title)})` `` vault-wide (prefer folder scope in cards)
+- [ ] `` `q= @({from("Characters")}, {any(status)}, {(status AS pill)})` `` renders status pills (not plain text)
 
 ## Syntax highlighting checklist
 

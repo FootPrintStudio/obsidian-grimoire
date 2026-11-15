@@ -14,6 +14,10 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.9 features
+
+- **`@` map `AS` styles** — e.g. `{(status AS pill)}` renders pill chips per matched page (not plain text)
+
 ## v0.9.8 features
 
 - **`@({from("…")}, {where…}?, {map}?)`** multi-note queries — quoted `from` / `from("*")`, where `!` negates / `!this.file`, map `this` = source

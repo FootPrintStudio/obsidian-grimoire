@@ -167,7 +167,14 @@ Missing targets / fields → empty. With **Refresh on metadata change** enabled,
 | 2nd `{where…}` | Optional. Bool predicates ANDed; `!` negates; `!this.file` excludes the source note |
 | 3rd `{map}` | Optional. Per-page expression; bare idents = page fields; `this.…` = **source** note |
 
-Result is a **list** (join with `join` / index with `[0]`). Prefer folder-scoped `from("…")` inside Visage cards. Hard cap **250** pages — over-cap returns empty.
+Result is a **list** (join with `join` / index with `[0]`). Map expressions may use **`AS` styles** (chips render per page):
+
+```markdown
+`q= @({from("Characters")}, {any(status)}, {(status AS pill)})`
+`q= @({from("Characters")}, {exists(title)}, {title AS card})`
+```
+
+Prefer folder-scoped `from("…")` inside Visage cards. Hard cap **250** pages — over-cap returns empty.
 
 ### Grouping
 

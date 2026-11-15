@@ -551,4 +551,30 @@ describe("@ multi-note query", () => {
 		});
 		expect(evaluateExpression('@({from("Bulk")})', ctx)).toEqual([]);
 	});
+
+	it("maps with AS styles (paren and bare)", () => {
+		const ctx = sourceCtx();
+		const paren = evaluateExpressionSafe(
+			'@({from("Employees/Management")}, {any(workStatus)}, {(workStatus AS pill)})',
+			ctx,
+		);
+		expect(paren.ok).toBe(true);
+		if (paren.ok) {
+			expect(Array.isArray(paren.value)).toBe(true);
+			const list = paren.value as import("../src/types").Value[];
+			expect(list.length).toBeGreaterThan(0);
+			expect(isPqStyled(list[0]!)).toBe(true);
+			if (isPqStyled(list[0]!)) {
+				expect(list[0].style).toBe("badge");
+				expect(list[0].value).toBe("retired");
+			}
+		}
+
+		const bare = evaluateExpression(
+			'@({from("Employees/Management")}, {contains(workStatus, "retired")}, {workStatus AS pill})',
+			ctx,
+		);
+		expect(Array.isArray(bare)).toBe(true);
+		expect(isPqStyled((bare as import("../src/types").Value[])[0]!)).toBe(true);
+	});
 });
