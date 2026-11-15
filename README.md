@@ -14,6 +14,10 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.6 features
+
+- **`inRange`** resolves Epochs fantasy date **strings / frontmatter objects** the same way as `date()` (not only pre-branded `PqDate`)
+
 ## v0.9.5 features
 
 - **`inRange`** classifies **dates** and **durations** (incl. Epochs-backed dates) the same way as numbers — below / in / above

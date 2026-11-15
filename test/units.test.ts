@@ -2,7 +2,50 @@ import { describe, expect, it } from "vitest";
 import { classifyInRange, formatFtIn, fnConv, fnInRange, fnInRangeTernary } from "../src/units";
 import { createTestContext, evaluateExpression } from "../src/eval";
 import { fnDate, fnDur, pqDate, pqDuration } from "../src/dates";
+import { setGrimoireApp } from "../src/epochsBridge";
 import { parseExpression } from "../src/parse";
+import type { App } from "obsidian";
+
+/** Minimal Epochs stub so fantasy `date("aether:…")` / FM objects resolve in tests. */
+function installFantasyEpochsMock(): void {
+	const msFor = (year: number, monthDay: number): number =>
+		Date.UTC(1970, 0, 1) + ((year - 1) * 90 + (monthDay - 1)) * 86_400_000;
+
+	setGrimoireApp({
+		plugins: {
+			plugins: {
+				epochs: {
+					api: {
+						parseDate(value: unknown) {
+							if (typeof value === "string") {
+								const m = /^aether:(\d+)-Greentide-(\d+)$/.exec(value.trim());
+								if (!m) return null;
+								const year = Number(m[1]);
+								const day = Number(m[2]);
+								// Greentide is month 2 (30 days after Frostmere) → day-of-year 30+day
+								return { ms: msFor(year, 30 + day), calendarId: "aether" };
+							}
+							if (value && typeof value === "object" && !Array.isArray(value)) {
+								const rec = value as Record<string, unknown>;
+								if (String(rec.calendar ?? "") !== "aether") return null;
+								const year = Number(rec.year);
+								const day = Number(rec.day);
+								if (!Number.isFinite(year) || !Number.isFinite(day)) return null;
+								const month = String(rec.month ?? "");
+								const dayOfYear = month.toLowerCase() === "greentide" ? 30 + day : day;
+								return { ms: msFor(year, dayOfYear), calendarId: "aether" };
+							}
+							return null;
+						},
+						formatDate: () => "",
+						formatDuration: () => "",
+						addDuration: (ms: number) => ms,
+					},
+				},
+			},
+		},
+	} as unknown as App);
+}
 
 describe("conv", () => {
 	it("converts length to inches", () => {
@@ -199,6 +242,40 @@ describe("eval integration", () => {
 		expect(
 			evaluateExpression('choice(inRange(height, date("2000-01-01"), 10), "OK", "fail")', ctx),
 		).toBe("fail");
+	});
+
+	it("ternary inRange classifies Epochs fantasy dates when API is present", () => {
+		installFantasyEpochsMock();
+		const ctx = createTestContext({
+			fields: {
+				fantasyBirth: { calendar: "aether", year: 312, month: "Greentide", day: 4 },
+			},
+		});
+		expect(
+			evaluateExpression(
+				'inRange({date(fantasyBirth), date("aether:300-Greentide-1"), date("aether:320-Greentide-1")}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("in");
+		expect(
+			evaluateExpression(
+				'inRange({date("aether:290-Greentide-1"), date("aether:300-Greentide-1"), date("aether:320-Greentide-1")}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("before");
+		expect(
+			evaluateExpression(
+				'inRange({date("aether:330-Greentide-1"), date("aether:300-Greentide-1"), date("aether:320-Greentide-1")}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("after");
+		// Bare FM object + fantasy strings (no date() wrapper) via Epochs parse in classifyInRange
+		expect(
+			evaluateExpression(
+				'inRange({fantasyBirth, "aether:300-Greentide-1", "aether:320-Greentide-1"}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("in");
 	});
 
 	it("evaluates conv in expressions", () => {

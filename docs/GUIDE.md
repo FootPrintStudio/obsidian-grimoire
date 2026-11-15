@@ -308,7 +308,7 @@ Unit names are case-insensitive (`cm`, `CM`, `centimeters`).
 | `low <= value <= high` | second branch (`inBand`) |
 | `value > high` | third branch (`above`) |
 
-Comparable operand kinds (all three must match): **number**, **date** (Gregorian or Epochs-backed), **duration**. Ordering matches `<` / `>` / `<=` / `>=`. Mixed or non-comparable operands → empty.
+Comparable operand kinds (all three must match): **number**, **date** (Gregorian or Epochs-backed — including fantasy strings / `{ calendar, year, month?, day }` objects via the same path as `date()`), **duration**. Ordering matches `<` / `>` / `<=` / `>=`. Mixed or non-comparable operands → empty. Fantasy dates still need Epochs + the calendar note indexed; missing calendar → empty.
 
 ```markdown
 `q= inRange({height, 150, 190}, {"too short", "OK", "too tall"})`

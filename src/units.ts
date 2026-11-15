@@ -1,5 +1,10 @@
-import { toPqDate, toPqDuration } from "./dates";
-import type { Value } from "./types";
+import { fnDate, toPqDate, toPqDuration } from "./dates";
+import type { PqDate, Value } from "./types";
+
+/** Prefer branded dates; otherwise reuse `date()` (Epochs fantasy strings / FM objects). */
+function asRangeDate(value: Value): PqDate | null {
+	return toPqDate(value) ?? fnDate(value);
+}
 
 type UnitCategory = "length" | "mass" | "temperature";
 
@@ -245,9 +250,9 @@ export function classifyInRange(value: Value, low: Value, high: Value): InRangeB
 		return classifyByOrderedMs(n, lo, hi);
 	}
 
-	const dv = toPqDate(value);
-	const dlo = toPqDate(low);
-	const dhi = toPqDate(high);
+	const dv = asRangeDate(value);
+	const dlo = asRangeDate(low);
+	const dhi = asRangeDate(high);
 	if (dv && dlo && dhi) {
 		return classifyByOrderedMs(dv.ms, dlo.ms, dhi.ms);
 	}

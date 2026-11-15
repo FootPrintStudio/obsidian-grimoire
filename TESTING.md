@@ -53,6 +53,7 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= inRange({dur(3, "days"), dur(1, "day"), dur(1, "week")}, {"short", "ok", "long"})` `` → **ok**
 - [ ] `` `q= inRange({age(birthDate), 18, 65}, {"young", "working", "senior"})` `` numeric age band
 - [ ] Mixed `` `q= inRange({height, date("2000-01-01"), 10}, {"a", "b", "c"})` `` → empty
+- [ ] Fantasy `` `q= inRange({date(fantasyBirth), date("aether:300-Greentide-1"), date("aether:320-Greentide-1")}, {"before", "in", "after"})` `` → **in** (needs Epochs + Aether)
 
 ## Syntax highlighting checklist
 

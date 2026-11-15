@@ -103,7 +103,7 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | `age(date)` / `age(date, fmt)` | Years since `date` (default), or duration-token format of elapsed span |
 | `numberformat(n, pattern)` | Number formatting (`0`, `0.00`, `,`, `%`) |
 | `conv(n, from, to)` | Unit conversion (length / mass / temperature; `ftin` → feet+inches string) |
-| `inRange({v, low, high}, {below, in, above})` | **Primary.** Inclusive three-way branch: `v < low` → `below`; `low ≤ v ≤ high` → `in`; `v > high` → `above`. Operands may be **numbers**, **dates** (incl. Epochs-backed), or **durations** (homogeneous). Mixed / non-comparable → empty. Brace groups are positional triples. |
+| `inRange({v, low, high}, {below, in, above})` | **Primary.** Inclusive three-way branch: `v < low` → `below`; `low ≤ v ≤ high` → `in`; `v > high` → `above`. Operands may be **numbers**, **dates** (incl. Epochs-backed strings/objects via `date()`-equivalent parse), or **durations** (homogeneous). Mixed / non-comparable → empty. Fantasy parse still requires Epochs + indexed calendar. Brace groups are positional triples. |
 | `inRange(v, low, high)` | **Legacy.** Inclusive boolean (`true`/`false`) with the same comparable types; keep for `choice(...)` migration |
 | `date(string \| now \| today)` | Parse ISO date string, or current time / start of today |
 | `length(v)` | String/list length |
