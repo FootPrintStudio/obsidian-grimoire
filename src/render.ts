@@ -130,6 +130,12 @@ function renderFragmentPart(
 	}
 }
 
+/** True when a list (e.g. `@` map of `status AS pill`) holds styled/fragment parts. */
+function listHasRichParts(value: Value): boolean {
+	if (!Array.isArray(value)) return false;
+	return value.some((item) => isPqStyled(item) || isPqFragments(item) || listHasRichParts(item));
+}
+
 function renderQueryResult(
 	app: App,
 	host: HTMLElement,
@@ -156,6 +162,23 @@ function renderQueryResult(
 		host.addClass("pq-result");
 		host.addClass("grim-fragments");
 		for (const part of value.parts) {
+			renderFragmentPart(app, host, part, sourcePath, ctx, settings);
+		}
+		return;
+	}
+
+	// `@({…}, {…}, {(status AS pill)})` → list of styled values; keep chips, don't stringify.
+	if (listHasRichParts(value)) {
+		host.empty();
+		host.addClass("pq-result");
+		host.addClass("grim-fragments");
+		let first = true;
+		for (const part of value as Value[]) {
+			if (part === null || part === undefined || part === "") continue;
+			if (!first) {
+				host.createSpan({ cls: "grim-fragment-sep", text: " " });
+			}
+			first = false;
 			renderFragmentPart(app, host, part, sourcePath, ctx, settings);
 		}
 		return;
