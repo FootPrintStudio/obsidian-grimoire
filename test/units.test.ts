@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { classifyInRange, formatFtIn, fnConv, fnInRange, fnInRangeTernary } from "../src/units";
 import { createTestContext, evaluateExpression } from "../src/eval";
+import { fnDate, fnDur, pqDate, pqDuration } from "../src/dates";
 import { parseExpression } from "../src/parse";
 
 describe("conv", () => {
@@ -49,9 +50,10 @@ describe("inRange", () => {
 		expect(fnInRange(11, 1, 10)).toBe(false);
 	});
 
-	it("returns false for non-numeric operands (boolean)", () => {
+	it("returns false for non-comparable operands (boolean)", () => {
 		expect(fnInRange("", 1, 10)).toBe(false);
 		expect(fnInRange(5, null, 10)).toBe(false);
+		expect(fnInRange(5, pqDate(0), 10)).toBe(false);
 	});
 
 	it("classifies below / in / above", () => {
@@ -63,11 +65,51 @@ describe("inRange", () => {
 		expect(classifyInRange("", 1, 10)).toBeNull();
 	});
 
+	it("classifies dates inclusively by ms order", () => {
+		const lo = fnDate("2000-01-01")!;
+		const mid = fnDate("2005-06-15")!;
+		const hi = fnDate("2010-12-31")!;
+		const before = fnDate("1999-12-31")!;
+		const after = fnDate("2011-01-01")!;
+		expect(classifyInRange(before, lo, hi)).toBe("below");
+		expect(classifyInRange(lo, lo, hi)).toBe("in");
+		expect(classifyInRange(mid, lo, hi)).toBe("in");
+		expect(classifyInRange(hi, lo, hi)).toBe("in");
+		expect(classifyInRange(after, lo, hi)).toBe("above");
+		expect(fnInRange(mid, lo, hi)).toBe(true);
+		expect(fnInRange(before, lo, hi)).toBe(false);
+	});
+
+	it("classifies durations inclusively by ms order", () => {
+		const lo = fnDur([1, "day"])!;
+		const mid = fnDur([3, "days"])!;
+		const hi = fnDur([1, "week"])!;
+		const short = pqDuration(lo.ms - 1);
+		const long = pqDuration(hi.ms + 1);
+		expect(classifyInRange(short, lo, hi)).toBe("below");
+		expect(classifyInRange(lo, lo, hi)).toBe("in");
+		expect(classifyInRange(mid, lo, hi)).toBe("in");
+		expect(classifyInRange(hi, lo, hi)).toBe("in");
+		expect(classifyInRange(long, lo, hi)).toBe("above");
+	});
+
+	it("returns null for mixed / non-comparable types", () => {
+		expect(classifyInRange(5, fnDate("2000-01-01")!, 10)).toBeNull();
+		expect(classifyInRange(fnDate("2000-01-01")!, 1, 10)).toBeNull();
+		expect(classifyInRange(fnDur([1, "day"])!, 1, 10)).toBeNull();
+		expect(classifyInRange(fnDate("2000-01-01")!, fnDur([1, "day"])!, fnDate("2010-01-01")!)).toBeNull();
+	});
+
 	it("ternary picks the matching branch", () => {
 		expect(fnInRangeTernary(0, 1, 10, "lo", "mid", "hi")).toBe("lo");
 		expect(fnInRangeTernary(5, 1, 10, "lo", "mid", "hi")).toBe("mid");
 		expect(fnInRangeTernary(11, 1, 10, "lo", "mid", "hi")).toBe("hi");
 		expect(fnInRangeTernary(null, 1, 10, "lo", "mid", "hi")).toBeNull();
+		const lo = fnDate("2000-01-01")!;
+		const hi = fnDate("2010-12-31")!;
+		expect(fnInRangeTernary(fnDate("1990-01-01")!, lo, hi, "lo", "mid", "hi")).toBe("lo");
+		expect(fnInRangeTernary(fnDate("2005-01-01")!, lo, hi, "lo", "mid", "hi")).toBe("mid");
+		expect(fnInRangeTernary(fnDate("2020-01-01")!, lo, hi, "lo", "mid", "hi")).toBe("hi");
 	});
 });
 
@@ -104,6 +146,59 @@ describe("eval integration", () => {
 			"OK",
 		);
 		expect(evaluateExpression('choice(inRange(height, 200, 220), "OK", "fail")', ctx)).toBe("fail");
+	});
+
+	it("ternary inRange classifies dates and durations", () => {
+		const ctx = createTestContext();
+		expect(
+			evaluateExpression(
+				'inRange({date("2005-06-15"), date("2000-01-01"), date("2010-12-31")}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("in");
+		expect(
+			evaluateExpression(
+				'inRange({date("1990-01-01"), date("2000-01-01"), date("2010-12-31")}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("before");
+		expect(
+			evaluateExpression(
+				'inRange({date("2020-01-01"), date("2000-01-01"), date("2010-12-31")}, {"before", "in", "after"})',
+				ctx,
+			),
+		).toBe("after");
+		expect(
+			evaluateExpression(
+				'inRange({dur(3, "days"), dur(1, "day"), dur(1, "week")}, {"short", "ok", "long"})',
+				ctx,
+			),
+		).toBe("ok");
+		expect(
+			evaluateExpression(
+				'inRange({dur(1, "hour"), dur(1, "day"), dur(1, "week")}, {"short", "ok", "long"})',
+				ctx,
+			),
+		).toBe("short");
+		expect(
+			evaluateExpression(
+				'inRange({age(date("2000-01-01")), 18, 65}, {"young", "working", "senior"})',
+				ctx,
+			),
+		).toBe("working");
+	});
+
+	it("ternary inRange returns empty for mixed types", () => {
+		const ctx = createTestContext({ fields: { height: 175 } });
+		expect(
+			evaluateExpression(
+				'inRange({height, date("2000-01-01"), date("2010-01-01")}, {"a", "b", "c"})',
+				ctx,
+			),
+		).toBeNull();
+		expect(
+			evaluateExpression('choice(inRange(height, date("2000-01-01"), 10), "OK", "fail")', ctx),
+		).toBe("fail");
 	});
 
 	it("evaluates conv in expressions", () => {

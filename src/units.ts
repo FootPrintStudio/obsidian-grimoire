@@ -1,3 +1,4 @@
+import { toPqDate, toPqDuration } from "./dates";
 import type { Value } from "./types";
 
 type UnitCategory = "length" | "mass" | "temperature";
@@ -223,34 +224,52 @@ export function fnConv(value: Value, fromRaw: string, toRaw: string): Value {
 	}
 }
 
-/** Inclusive boolean range check: `low <= value <= high`. */
-export function fnInRange(value: Value, low: Value, high: Value): boolean {
-	const n = toNumber(value);
-	const lo = toNumber(low);
-	const hi = toNumber(high);
-	if (n === null || lo === null || hi === null) return false;
-	return lo <= n && n <= hi;
-}
-
 export type InRangeBand = "below" | "in" | "above";
+
+function classifyByOrderedMs(valueMs: number, lowMs: number, highMs: number): InRangeBand {
+	if (valueMs < lowMs) return "below";
+	if (valueMs > highMs) return "above";
+	return "in";
+}
 
 /**
  * Classify `value` relative to inclusive `[low, high]`.
- * Returns `null` when any operand is non-numeric.
+ * Supports numbers, dates (incl. Epochs-backed `PqDate`), and durations via the
+ * same ordering as comparison operators. Mixed or non-comparable → `null`.
  */
 export function classifyInRange(value: Value, low: Value, high: Value): InRangeBand | null {
 	const n = toNumber(value);
 	const lo = toNumber(low);
 	const hi = toNumber(high);
-	if (n === null || lo === null || hi === null) return null;
-	if (n < lo) return "below";
-	if (n > hi) return "above";
-	return "in";
+	if (n !== null && lo !== null && hi !== null) {
+		return classifyByOrderedMs(n, lo, hi);
+	}
+
+	const dv = toPqDate(value);
+	const dlo = toPqDate(low);
+	const dhi = toPqDate(high);
+	if (dv && dlo && dhi) {
+		return classifyByOrderedMs(dv.ms, dlo.ms, dhi.ms);
+	}
+
+	const uv = toPqDuration(value);
+	const ulo = toPqDuration(low);
+	const uhi = toPqDuration(high);
+	if (uv && ulo && uhi) {
+		return classifyByOrderedMs(uv.ms, ulo.ms, uhi.ms);
+	}
+
+	return null;
+}
+
+/** Inclusive boolean range check: `low <= value <= high` (number / date / duration). */
+export function fnInRange(value: Value, low: Value, high: Value): boolean {
+	return classifyInRange(value, low, high) === "in";
 }
 
 /**
  * Three-way range branch: pick `below` / `inBand` / `above` by inclusive bounds.
- * Non-numeric operands → `null`.
+ * Mixed or non-comparable operands → `null`.
  */
 export function fnInRangeTernary(
 	value: Value,
