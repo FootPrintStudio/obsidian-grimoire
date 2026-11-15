@@ -33,7 +33,7 @@ import {
 } from "./dates";
 import { fnConv, fnInRange, fnInRangeTernary } from "./units";
 import { getFileField, resolveIdent } from "./context";
-import { readCrossMember, resolveNoteContext } from "./crossNote";
+import { listNotesFrom, readCrossMember, resolveNoteContext } from "./crossNote";
 import { parseExpression, parseQuery } from "./parse";
 import type { AstNode, FileMeta, QueryContext, Value } from "./types";
 
@@ -275,6 +275,66 @@ function evalInRange(args: AstNode[], ctx: QueryContext): Value {
 	);
 }
 
+function thisFileMeta(ctx: QueryContext): FileMeta {
+	return ctx.sourceCtx?.file ?? ctx.file;
+}
+
+function isThisFileRef(node: AstNode): boolean {
+	return node.kind === "member" && node.object.kind === "ident" && node.object.name === "this" && node.property === "file";
+}
+
+/** Where-brace predicate; `this.file` means "candidate is the source note". */
+function evalWhereItem(node: AstNode, candidate: QueryContext, source: QueryContext): boolean {
+	let negated = false;
+	let body = node;
+	if (body.kind === "unary" && (body.op === "!" || body.op === "not")) {
+		negated = true;
+		body = body.arg;
+	}
+
+	if (isThisFileRef(body)) {
+		const isSource = candidate.file.path === source.file.path;
+		return negated ? !isSource : isSource;
+	}
+
+	const scoped: QueryContext = { ...candidate, sourceCtx: source, deps: source.deps };
+	const truth = isTruthy(evalNode(body, scoped));
+	return negated ? !truth : truth;
+}
+
+function evalAtQuery(
+	node: Extract<AstNode, { kind: "atQuery" }>,
+	source: QueryContext,
+): Value {
+	const fromRaw = evalNode(node.fromArg, source);
+	const fromArg = String(unwrapForTruthiness(fromRaw) ?? "").trim();
+	if (!fromArg) return [];
+
+	const pages = listNotesFrom(source, fromArg);
+	const filtered = pages.filter((page) =>
+		node.where.every((item) => evalWhereItem(item, page, source)),
+	);
+
+	if (!node.map) {
+		// Page-handle list (wiki strings) when no map brace.
+		return filtered.map((page) => `[[${page.file.name}]]`);
+	}
+
+	const out: Value[] = [];
+	for (const page of filtered) {
+		const scoped: QueryContext = {
+			...page,
+			sourceCtx: source,
+			deps: source.deps,
+			app: source.app,
+			resolveNote: source.resolveNote,
+			listNotes: source.listNotes,
+		};
+		out.push(evalNode(node.map, scoped));
+	}
+	return out;
+}
+
 function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 	if (node.kind === "ident") {
 		if (node.name === "file") return ctx.file as unknown as Value;
@@ -287,7 +347,7 @@ function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 	}
 	if (node.kind === "member") {
 		if (node.object.kind === "ident" && node.object.name === "this" && node.property === "file") {
-			return ctx.file as unknown as Value;
+			return thisFileMeta(ctx) as unknown as Value;
 		}
 		if (node.object.kind === "ident" && node.object.name === "file") {
 			return getFileField(ctx.file, node.property);
@@ -298,7 +358,7 @@ function resolveMemberNode(node: AstNode, ctx: QueryContext): Value {
 			node.object.object.name === "this" &&
 			node.object.property === "file"
 		) {
-			return getFileField(ctx.file, node.property);
+			return getFileField(thisFileMeta(ctx), node.property);
 		}
 		// Bare wiki page member: [[Note]].field / [[Note]].file.mtime
 		if (node.object.kind === "wiki") {
@@ -422,9 +482,11 @@ function evalNode(node: AstNode, ctx: QueryContext): Value {
 		}
 		case "styled":
 			return pqStyled(evalNode(node.expr, ctx), node.style);
+		case "atQuery":
+			return evalAtQuery(node, ctx);
 		case "unary": {
 			const v = evalNode(node.arg, ctx);
-			if (node.op === "not") return !isTruthy(v);
+			if (node.op === "not" || node.op === "!") return !isTruthy(v);
 			if (node.op === "-") return -(Number(unwrapForTruthiness(v)) || 0);
 			return null;
 		}
@@ -546,5 +608,7 @@ export function createTestContext(
 		app: overrides.app,
 		deps: overrides.deps,
 		resolveNote: overrides.resolveNote,
+		listNotes: overrides.listNotes,
+		sourceCtx: overrides.sourceCtx,
 	};
 }

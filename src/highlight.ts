@@ -115,6 +115,12 @@ export function tokenizeForHighlight(input: string): HighlightSegment[] {
 			continue;
 		}
 
+		if (c === "!" || c === "@") {
+			push("op", i, i + 1);
+			i++;
+			continue;
+		}
+
 		if ("(){}[],".includes(c)) {
 			push(punctClass(c), i, i + 1);
 			i++;

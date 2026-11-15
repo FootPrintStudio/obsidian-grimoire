@@ -103,6 +103,10 @@ export function getMemberValue(base: Value, property: string): Value {
 }
 
 export function resolveIdent(name: string, ctx: QueryContext): Value {
-	if (name === "this") return ctx.fields;
+	if (name === "this") {
+		// Inside `@` map/where, `this` is the authoring source note.
+		if (ctx.sourceCtx) return ctx.sourceCtx.fields;
+		return ctx.fields;
+	}
 	return ctx.fields[name] ?? null;
 }

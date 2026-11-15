@@ -59,6 +59,9 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] List-of-links `` `q= links.title[0]` `` / `` `q= links.title[0,1]` ``
 - [ ] Missing `` `q= [[NoSuch]].title` `` → empty; `` `q= default([[NoSuch]].title, "x")` `` → **x**
 - [ ] With refresh toggle on, editing Other’s frontmatter refreshes an open note that referenced it
+- [ ] `` `q= @({from("Characters")})` `` lists wiki handles under that folder
+- [ ] `` `q= @({from("Characters")}, {!this.file, exists(title)}, {title})` `` filters + maps with `this`
+- [ ] `` `q= @({from("*")}, {exists(title)})` `` vault-wide (prefer folder scope in cards)
 
 ## Syntax highlighting checklist
 

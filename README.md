@@ -14,11 +14,16 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.8 features
+
+- **`@({from("…")}, {where…}?, {map}?)`** multi-note queries — quoted `from` / `from("*")`, where `!` negates / `!this.file`, map `this` = source
+- Hard cap 250 pages (over → empty); prefer folder-scoped `from` in Visage
+- PQL-SPEC **v0.9**
+
 ## v0.9.7 features
 
 - **Cross-note (single-page):** bare `[[Note]].field`, link-valued auto-pass (`parent.title`), list-of-links → list + `[0]` / `[0,4,5]`
 - Refresh dependency registry when **Refresh on metadata change** is on
-- PQL-SPEC **v0.8** — `@({from…})` deferred to a later slice
 
 ## v0.9.6 features
 

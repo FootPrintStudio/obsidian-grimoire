@@ -2,7 +2,7 @@ import type { App } from "obsidian";
 import { TFile } from "obsidian";
 import { buildQueryContext, getFileField, resolveIdent } from "./context";
 import { parseLink } from "./parseLink";
-import type { QueryContext, Value } from "./types";
+import { AT_QUERY_MAX_PAGES, type QueryContext, type Value } from "./types";
 
 /** Extract a vault linkpath from a wiki/markdown/path string, or null if not link-like. */
 export function linkpathFromValue(value: Value): string | null {
@@ -111,4 +111,51 @@ export function attachVaultBridge(
 	ctx.sourcePath = sourcePath;
 	if (deps) ctx.deps = deps;
 	return ctx;
+}
+
+function normalizeFolderPrefix(fromArg: string): string {
+	return fromArg.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+function fileInFromScope(filePath: string, fromArg: string): boolean {
+	if (fromArg === "*") return true;
+	const folder = normalizeFolderPrefix(fromArg);
+	if (!folder) return true;
+	const path = filePath.replace(/\\/g, "/");
+	return path === `${folder}.md` || path.startsWith(`${folder}/`);
+}
+
+/**
+ * List markdown notes for `@({from("…")})`.
+ * Over {@link AT_QUERY_MAX_PAGES} matches → empty list (Visage safety).
+ */
+export function listNotesFrom(ctx: QueryContext, fromArg: string): QueryContext[] {
+	const arg = String(fromArg ?? "").trim();
+	if (!arg) return [];
+
+	if (ctx.listNotes) {
+		const listed = ctx.listNotes(arg);
+		if (listed.length > AT_QUERY_MAX_PAGES) return [];
+		for (const note of listed) trackDep(ctx, note.file.path);
+		return listed;
+	}
+
+	const app = ctx.app;
+	if (!app) return [];
+
+	const files = app.vault.getMarkdownFiles().filter((f) => fileInFromScope(f.path, arg));
+	if (files.length > AT_QUERY_MAX_PAGES) return [];
+
+	const out: QueryContext[] = [];
+	for (const file of files) {
+		trackDep(ctx, file.path);
+		const child = buildQueryContext(app, file);
+		child.app = app;
+		child.sourcePath = file.path;
+		child.deps = ctx.deps;
+		child.resolveNote = ctx.resolveNote;
+		child.listNotes = ctx.listNotes;
+		out.push(child);
+	}
+	return out;
 }

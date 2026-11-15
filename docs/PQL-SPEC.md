@@ -1,4 +1,4 @@
-# Property Query Language (PQL) — Specification v0.8
+# Property Query Language (PQL) — Specification v0.9
 
 Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
@@ -8,7 +8,7 @@ Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the
 
 ## Scope
 
-PQL is scoped to the **current note** by default. **Cross-note** reads are opt-in via bare wiki primaries and link-valued member access:
+PQL is scoped to the **current note** by default. **Cross-note** reads are opt-in via bare wiki primaries, link-valued member access, and `@` multi-note queries:
 
 | Form | Meaning |
 |------|---------|
@@ -17,8 +17,9 @@ PQL is scoped to the **current note** by default. **Cross-note** reads are opt-i
 | `[[Other Note]].file.mtime` | Reserved `file.*` on that note |
 | `linkField.member` | When `linkField` holds a wiki/path link, resolve then read `member` |
 | List-of-links `.field` | Map → list of values; index with `[0]` or `[0,4,5]` |
+| `@({from("folder")}, {where…}?, {map}?)` | Scoped multi-note query (quoted `from`; where `!` negates; map `this` = source) |
 
-Missing note / field → `null` (empty output). Multi-note `@({from…}, …)` queries are **not** in v0.8 (planned).
+Missing note / field → `null` (empty output). `@` page lists hard-cap at **250**; over-cap → empty list.
 
 ## Context model
 
@@ -69,6 +70,7 @@ A frontmatter field named `file` (without `.`) is still accessible as a bare ide
 | Grouping | `( )` |
 | Member / index | `.property`, `[index]`, multi `[i,j,…]` |
 | Wiki primary | bare `[[linkpath]]` |
+| At-query | `@({from("…")}, …)` |
 
 ### String concatenation
 
