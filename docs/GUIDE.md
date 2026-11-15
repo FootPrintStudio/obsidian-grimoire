@@ -308,20 +308,26 @@ Unit names are case-insensitive (`cm`, `CM`, `centimeters`).
 | `low <= value <= high` | second branch (`inBand`) |
 | `value > high` | third branch (`above`) |
 
-Non-numeric operands → empty.
+Comparable operand kinds (all three must match): **number**, **date** (Gregorian or Epochs-backed — including fantasy strings / `{ calendar, year, month?, day }` objects via the same path as `date()`), **duration**. Ordering matches `<` / `>` / `<=` / `>=`. Mixed or non-comparable operands → empty. Fantasy dates still need Epochs + the calendar note indexed; missing calendar → empty.
 
 ```markdown
 `q= inRange({height, 150, 190}, {"too short", "OK", "too tall"})`
 `q= inRange({numA, 1, 10}, {"low", "in band", "high"})`
 `q= inRange({height, minHeight, maxHeight}, {"↓", "✓", "↑"})`
+`q= inRange({date(birthDate), date("2000-01-01"), date("2010-12-31")}, {"early", "in window", "late"})`
+`q= inRange({dur(3, "days"), dur(1, "day"), dur(1, "week")}, {"short", "ok", "long"})`
+`q= inRange({age(birthDate), 18, 65}, {"young", "working age", "senior"})`
 ```
+
+`age(...)` returns a **number**, so age bands use the numeric path (not date/duration).
 
 #### Legacy boolean form
 
-`inRange(value, low, high)` still returns **`true`/`false`** for use with `choice`. Prefer the ternary form for new notes.
+`inRange(value, low, high)` still returns **`true`/`false`** for use with `choice` (same comparable types). Prefer the ternary form for new notes.
 
 ```markdown
 `q= choice(inRange(height, 150, 190), "OK", "Out of range")`
+`q= choice(inRange(date(birthDate), date("2000-01-01"), date("2010-12-31")), "in window", "out")`
 ```
 
 **Migration:** replace `choice(inRange(v, lo, hi), in, out)` with `inRange({v, lo, hi}, {outBelow, in, outAbove})` when you need separate below/above labels (or use the same string for both out-of-range branches).

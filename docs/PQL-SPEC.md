@@ -1,4 +1,4 @@
-# Property Query Language (PQL) — Specification v0.6
+# Property Query Language (PQL) — Specification v0.7
 
 Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
@@ -54,7 +54,7 @@ A frontmatter field named `file` (without `.`) is still accessible as a bare ide
 | Category | Operators |
 |----------|-----------|
 | Arithmetic | `+` `-` `*` `/` `%` |
-| Comparison | `==` `!=` `<` `>` `<=` `>=` (inclusive range: ternary `inRange({v,lo,hi},{below,in,above})`; legacy boolean `inRange(v,lo,hi)`) |
+| Comparison | `==` `!=` `<` `>` `<=` `>=` (inclusive range: ternary `inRange({v,lo,hi},{below,in,above})`; legacy boolean `inRange(v,lo,hi)`; numbers / dates / durations) |
 | Logical | `and`, `or`, `not`, `&&` |
 | Grouping | `( )` |
 | Member / index | `.property`, `[index]` |
@@ -103,8 +103,8 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | `age(date)` / `age(date, fmt)` | Years since `date` (default), or duration-token format of elapsed span |
 | `numberformat(n, pattern)` | Number formatting (`0`, `0.00`, `,`, `%`) |
 | `conv(n, from, to)` | Unit conversion (length / mass / temperature; `ftin` → feet+inches string) |
-| `inRange({n, low, high}, {below, in, above})` | **Primary.** Inclusive three-way branch: `n < low` → `below`; `low ≤ n ≤ high` → `in`; `n > high` → `above`. Non-numeric → empty. Brace groups are positional triples. |
-| `inRange(n, low, high)` | **Legacy.** Inclusive boolean (`true`/`false`); keep for `choice(...)` migration |
+| `inRange({v, low, high}, {below, in, above})` | **Primary.** Inclusive three-way branch: `v < low` → `below`; `low ≤ v ≤ high` → `in`; `v > high` → `above`. Operands may be **numbers**, **dates** (incl. Epochs-backed strings/objects via `date()`-equivalent parse), or **durations** (homogeneous). Mixed / non-comparable → empty. Fantasy parse still requires Epochs + indexed calendar. Brace groups are positional triples. |
+| `inRange(v, low, high)` | **Legacy.** Inclusive boolean (`true`/`false`) with the same comparable types; keep for `choice(...)` migration |
 | `date(string \| now \| today)` | Parse ISO date string, or current time / start of today |
 | `length(v)` | String/list length |
 | `coalesce(a, b, …)` | First truthy value |

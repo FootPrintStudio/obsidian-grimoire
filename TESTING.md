@@ -49,6 +49,11 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= conv(180, cm, ftin)` `` → **5' 11"**
 - [ ] `` `q= inRange({height, 150, 190}, {"short", "OK", "tall"})` `` three-way inclusive range
 - [ ] `` `q= choice(inRange(height, 150, 190), "OK", "Out")` `` legacy boolean still works
+- [ ] `` `q= inRange({date("2005-06-15"), date("2000-01-01"), date("2010-12-31")}, {"before", "in", "after"})` `` → **in**
+- [ ] `` `q= inRange({dur(3, "days"), dur(1, "day"), dur(1, "week")}, {"short", "ok", "long"})` `` → **ok**
+- [ ] `` `q= inRange({age(birthDate), 18, 65}, {"young", "working", "senior"})` `` numeric age band
+- [ ] Mixed `` `q= inRange({height, date("2000-01-01"), 10}, {"a", "b", "c"})` `` → empty
+- [ ] Fantasy `` `q= inRange({date(fantasyBirth), date("aether:300-Greentide-1"), date("aether:320-Greentide-1")}, {"before", "in", "after"})` `` → **in** (needs Epochs + Aether)
 
 ## Syntax highlighting checklist
 
