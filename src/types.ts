@@ -97,6 +97,7 @@ export type AstNode =
 	| { kind: "ident"; name: string }
 	| { kind: "member"; object: AstNode; property: string }
 	| { kind: "index"; object: AstNode; index: AstNode }
+	/** Brace `{a, b}` — also `{a}` which parses as pair with false arm `""`. */
 	| { kind: "pair"; key: AstNode; value: AstNode }
 	/** Brace group with 3+ comma-separated expressions, e.g. `{v, lo, hi}`. */
 	| { kind: "tuple"; elements: AstNode[] }

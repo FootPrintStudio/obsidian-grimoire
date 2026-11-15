@@ -15,7 +15,13 @@ Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coe
 - [ ] `` `q= title` `` shows frontmatter title
 - [ ] `` `q= dateformat(file.mtime, "yyyy-MM-dd HH:mm:ss")` `` formats mtime
 - [ ] HTML placeholder row renders styled `<em>` text
-- [ ] `` `q= choice(any(tags), tags, "no tags")` `` shows tag list
+- [ ] `` `q= any(tags, {tags, "no tags"})` `` shows tag list
+- [ ] `` `q= choice(any(tags), {tags, "no tags"})` `` brace-form choice
+- [ ] `` `q= any(parent, {"**Parent:** " + parent})` `` true-only `{Value}` hides when empty
+- [ ] `` `q= exists(description, {description, "No description"})` `` branches
+- [ ] `` `q= econtains({slice(epochTitles, 0, 1), ""}, {None, slice(epochTitles, 0, 1)})` `` epoch slot
+- [ ] `` `q= contains({title, "ell"}, {"yes", "no"})` `` two-brace contains
+- [ ] `` `q= choice(any(tags), tags, "no tags")` `` legacy three-arg choice still works
 - [ ] `` `q= select(2, …)` `` shows **Green**
 - [ ] `` `q= select(3, …, pageColour)` `` shows **Blue**
 - [ ] `` `q= "**Parent:** " + parent` `` renders bold + wikilink

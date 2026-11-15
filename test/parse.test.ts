@@ -111,6 +111,34 @@ describe("parseQuery AS style", () => {
 	});
 });
 
+describe("brace groups", () => {
+	it("parses singleton {Value} as pair with empty false arm", () => {
+		const ast = parseExpression('choice(true, {"only"})');
+		expect(ast.kind).toBe("call");
+		if (ast.kind === "call") {
+			expect(ast.args[1]?.kind).toBe("pair");
+			if (ast.args[1]?.kind === "pair") {
+				expect(ast.args[1].key.kind).toBe("literal");
+				expect(ast.args[1].value.kind).toBe("literal");
+				if (ast.args[1].value.kind === "literal") expect(ast.args[1].value.value).toBe("");
+			}
+		}
+	});
+
+	it("parses {a, b} as pair and {a, b, c} as tuple", () => {
+		const pairAst = parseExpression('choice(true, {"a", "b"})');
+		expect(pairAst.kind).toBe("call");
+		if (pairAst.kind === "call") expect(pairAst.args[1]?.kind).toBe("pair");
+
+		const tupleAst = parseExpression('inRange({1, 2, 3}, {"a", "b", "c"})');
+		expect(tupleAst.kind).toBe("call");
+		if (tupleAst.kind === "call") {
+			expect(tupleAst.args[0]?.kind).toBe("tuple");
+			expect(tupleAst.args[1]?.kind).toBe("tuple");
+		}
+	});
+});
+
 describe("parseRenderStyleName", () => {
 	it("maps aliases", () => {
 		expect(parseRenderStyleName("card")).toBe("cards");

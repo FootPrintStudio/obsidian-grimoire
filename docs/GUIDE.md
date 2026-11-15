@@ -141,13 +141,20 @@ Empty string, `null`, and empty lists `[]` are treated as missing.
 `q= default(title, "Untitled")`
 ```
 
-### `choice(condition, ifTrue, ifFalse)`
+### `choice(condition, {ifTrue, ifFalse})`
 
-Boolean branch — like an if/else.
+Boolean branch — like an if/else. **Primary** form uses a brace branch group. **`{Value}`** means true-only (≡ `{Value, ""}`).
+
+```markdown
+`q= choice(any(tags), {tags, "no tags"})`
+`q= choice(numA == 10, {"ten", "not ten"})`
+`q= choice(any(parent), {"**Parent:** " + parent})`
+```
+
+#### Legacy three-arg form
 
 ```markdown
 `q= choice(any(tags), tags, "no tags")`
-`q= choice(any(description), "*" + description + "*", "No description")`
 ```
 
 ### `select(key, {k1, v1}, {k2, v2}, …)`
@@ -163,16 +170,20 @@ Key-based lookup — like a switch. First argument is the value to match; remain
 - Values may be literals, properties, or any expression.
 - **`{*, fallback}`**, **`{default, fallback}`**, or **`{_, fallback}`** — used when no key matches.
 
-### `any(value, …candidates)`
+### `any(value, …candidates, {ifTrue, ifFalse}?)`
 
-**One argument:** `true` when the value exists and is non-empty (string or list).
+**With a trailing branch brace:** returns the matching arm (self-branching). **`{Value}`** ≡ `{Value, ""}`.
 
-**Two or more arguments:** first argument is the property; remaining arguments are candidates. Returns `true` if **any** candidate is contained in the property (exact element match for lists; substring match for strings).
+**Without a branch brace (legacy boolean):**
+
+- **One argument:** `true` when the value exists and is non-empty (string or list).
+- **Two or more arguments:** first argument is the property; remaining arguments are candidates. Returns `true` if **any** candidate is contained in the property (exact element match for lists; substring match for strings).
 
 ```markdown
-`q= choice(any(tags), tags, "no tags")`
-`q= choice(any(bodyParts, "Feet", "Elbows"), "found", "not found")`
-`q= choice(any(parent), "**Parent:** " + parent, "")`
+`q= any(tags, {tags, "no tags"})`
+`q= any(bodyParts, "Feet", "Elbows", {"found", "not found"})`
+`q= any(parent, {"**Parent:** " + parent})`
+`q= any(tags)`
 ```
 
 Example — `bodyParts: [Hand, Feet, Knees, Toes]`:
@@ -183,12 +194,14 @@ Example — `bodyParts: [Hand, Feet, Knees, Toes]`:
 | `any(bodyParts, "Feet", "Elbows")` | `true` |
 | `any(bodyParts, "Nose", "Elbows", "Legs")` | `false` |
 
-### `exists(value)`
+### `exists(value, {ifTrue, ifFalse}?)`
 
-Explicit non-empty predicate — same truthiness as one-arg `any(value)`, but clearer for optional fields.
+Explicit non-empty predicate — same truthiness as one-arg `any(value)`, but clearer for optional fields. With a branch brace, returns the arm instead of a boolean.
 
 ```markdown
-`q= choice(exists(description), description, "No description")`
+`q= exists(description, {description, "No description"})`
+`q= exists(description, {description})`
+`q= exists(description)`
 ```
 
 ### `slice(list, start, end?)`
@@ -197,16 +210,30 @@ Returns a sub-list. `end` is optional (defaults to list length).
 
 ```markdown
 `q= slice(epochTitles, 0, 1)`
-`q= choice(econtains(slice(epochTitles, 1, 2), ""), None, slice(epochTitles, 1, 2))`
+`q= econtains({slice(epochTitles, 1, 2), ""}, {None, slice(epochTitles, 1, 2)})`
 ```
 
-### `contains(haystack, needle)`
+### `contains({haystack, needle}, {ifTrue, ifFalse})`
+
+**Primary:** two brace groups — subject pair + binary branch. **`{Value}`** true-only still applies to the branch brace.
+
+Legacy boolean: `contains(haystack, needle)`. Also accepts `contains(hay, needle, {ifTrue, ifFalse})`.
 
 Substring match for strings; partial match for list elements.
 
-### `econtains(haystack, needle)`
+```markdown
+`q= contains({title, "ell"}, {"yes", "no"})`
+`q= contains(title, "ell")`
+```
 
-Exact element match in lists; exact key check for objects.
+### `econtains({haystack, needle}, {ifTrue, ifFalse})`
+
+Exact element match in lists; exact key check for objects. Same primary / legacy shapes as `contains`.
+
+```markdown
+`q= econtains({slice(epochTitles, 0, 1), ""}, {None, slice(epochTitles, 0, 1)})`
+`q= econtains(tags, "a")`
+```
 
 ### `dateformat(date, format)`
 
@@ -406,7 +433,7 @@ Apply **`AS <style>`** after any subexpression to wrap that value in a Pretty-st
 ```markdown
 `q= default(characterStatus, "<font color=\"#595959\">Alive, Dead, Undead.</font>") AS card`
 `q= default(location AS card, "*Unknown*")`
-`q= choice(any(location), "**Location:** " + (location AS card) + " <br>", "")`
+`q= any(location, {"**Location:** " + (location AS card) + " <br>"})`
 `q= file.tags AS tag`
 `q= characterStatus AS badge`
 `q= parent AS button`
@@ -443,7 +470,7 @@ Without `AS`, output uses the default markdown / HTML / plain pipeline above.
 ```markdown
 `q= "![](" + pageImage + ")"`
 `q= "**Parent:** " + parent`
-`q= choice(any(parent), "**Parent:** " + parent + "<br>", "")`
+`q= any(parent, {"**Parent:** " + parent + "<br>"})`
 `q= default(title, "<em>Placeholder title</em>")`
 ```
 

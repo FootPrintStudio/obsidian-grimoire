@@ -50,12 +50,28 @@ describe("eval core functions", () => {
 		);
 	});
 
+	it("choice accepts brace branches and true-only singleton", () => {
+		expect(evaluateExpression('choice(true, {"yes", "no"})', createTestContext())).toBe("yes");
+		expect(evaluateExpression('choice(false, {"yes", "no"})', createTestContext())).toBe("no");
+		expect(evaluateExpression('choice(true, {"only"})', createTestContext())).toBe("only");
+		expect(evaluateExpression('choice(false, {"only"})', createTestContext())).toBe("");
+	});
+
 	it("exists is true for non-empty values", () => {
 		expect(evaluateExpression("exists(tags)", ctx)).toBe(true);
 		expect(evaluateExpression("exists(emptyField)", createTestContext({ fields: { emptyField: "" } }))).toBe(
 			false,
 		);
 		expect(evaluateExpression("exists(missing)", createTestContext({ fields: {} }))).toBe(false);
+	});
+
+	it("exists self-branches with brace arms", () => {
+		expect(evaluateExpression('exists(tags, {tags, "none"})', ctx)).toEqual(["a", "b"]);
+		expect(evaluateExpression('exists(description, {description, "No description"})', ctx)).toBe(
+			"No description",
+		);
+		expect(evaluateExpression('exists(tags, {tags})', ctx)).toEqual(["a", "b"]);
+		expect(evaluateExpression('exists(description, {description})', ctx)).toBe("");
 	});
 
 	it("any multi-arg checks containment in property", () => {
@@ -65,6 +81,49 @@ describe("eval core functions", () => {
 		expect(evaluateExpression("any(bodyParts)", bodyCtx)).toBe(true);
 		expect(evaluateExpression('any(bodyParts, "Feet", "Elbows")', bodyCtx)).toBe(true);
 		expect(evaluateExpression('any(bodyParts, "Nose", "Elbows", "Legs")', bodyCtx)).toBe(false);
+	});
+
+	it("any self-branches with trailing brace arms", () => {
+		expect(evaluateExpression('any(tags, {tags, "no tags"})', ctx)).toEqual(["a", "b"]);
+		expect(evaluateExpression('any(description, {"*"+description+"*", "No description"})', ctx)).toBe(
+			"No description",
+		);
+		const bodyCtx = createTestContext({
+			fields: { bodyParts: ["Hand", "Feet", "Knees", "Toes"] },
+		});
+		expect(evaluateExpression('any(bodyParts, "Feet", "Elbows", {"found", "not found"})', bodyCtx)).toBe(
+			"found",
+		);
+		expect(evaluateExpression('any(bodyParts, "Nose", {"found", "not found"})', bodyCtx)).toBe("not found");
+		expect(evaluateExpression('any(parent, {"**Parent:** " + parent})', ctx)).toBe("**Parent:** [[Someone]]");
+		expect(
+			evaluateExpression('any(missing, {"shown"})', createTestContext({ fields: {} })),
+		).toBe("");
+	});
+
+	it("contains and econtains self-branch", () => {
+		expect(evaluateExpression('contains({title, "ell"}, {"yes", "no"})', ctx)).toBe("yes");
+		expect(evaluateExpression('contains({title, "xyz"}, {"yes", "no"})', ctx)).toBe("no");
+		expect(evaluateExpression('contains(title, "ell", {"hit"})', ctx)).toBe("hit");
+		expect(evaluateExpression('contains(title, "xyz", {"hit"})', ctx)).toBe("");
+		expect(evaluateExpression('contains(title, "ell")', ctx)).toBe(true);
+
+		const epochCtx = createTestContext({
+			fields: { epochTitles: ["Alpha", "", "Gamma"] },
+		});
+		expect(
+			evaluateExpression(
+				'econtains({slice(epochTitles, 0, 1), ""}, {None, slice(epochTitles, 0, 1)})',
+				epochCtx,
+			),
+		).toEqual(["Alpha"]);
+		expect(
+			evaluateExpression(
+				'econtains({slice(epochTitles, 1, 2), ""}, {None, slice(epochTitles, 1, 2)})',
+				epochCtx,
+			),
+		).toBe(null);
+		expect(evaluateExpression('econtains(tags, "a")', ctx)).toBe(true);
 	});
 
 	it("select matches numeric keys", () => {

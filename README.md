@@ -14,6 +14,12 @@ Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStud
 
 See **Settings → Guide** in Obsidian (or [docs/GUIDE.md](docs/GUIDE.md)) for the full language reference.
 
+## v0.9.4 features
+
+- Self-branching **`any` / `exists` / `contains` / `econtains`** plus **`choice(cond, {a, b})`**
+- True-only branch shorthand: **`{Value}`** ≡ **`{Value, ""}`**
+- Omit branch brace → legacy boolean (unchanged)
+
 ## v0.9.3 features
 
 - **`inRange({value, low, high}, {below, inBand, above})`** — primary three-way inclusive range branch (below / in / above)
@@ -71,7 +77,7 @@ Target only part of a result with subexpression `AS`:
 
 ```markdown
 `q= default(location AS card, "*Unknown*")`
-`q= choice(any(location), "**Location:** " + (location AS card) + " <br>", "")`
+`q= any(location, {"**Location:** " + (location AS card) + " <br>"})`
 ```
 
 Use parentheses when concatenating so the style does not wrap the whole sum. Mixed plain + styled parts render inline together.
